@@ -1,4 +1,4 @@
-name: CI for rust-f3
+name: CI
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
@@ -75,10 +75,10 @@ jobs:
           name: lcov.info
           path: lcov.info
           if-no-files-found: error
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: false # Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.
-        with:
-          # token: ${{ secrets.CODECOV_TOKEN }}
-          files: lcov.info
-          fail_ci_if_error: true
+      - name: Upload to codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -f lcov.info -Z
