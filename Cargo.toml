@@ -1,6 +1,11 @@
 [workspace]
+resolver = "2"
+members = ["blssig", "gpbft"]
 
-members = [
-  "blssig",
-  "gpbft"
-]
+[workspace.package]
+authors = ["ChainSafe Systems <forest@chainsafe.io>"]
+repository = "https://github.com/ChainSafe/rust-f3"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[workspace.dependencies]

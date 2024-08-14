@@ -1,0 +1,13 @@
+# Keys and default values are documented here:
+# https://github.com/rustsec/rustsec/blob/main/cargo-audit/audit.toml.example
+
+[advisories]
+# These should all have either:
+# - tracking issues with the "security" label
+# - reasons why they're ignored
+ignore = []
+
+[output]
+deny = ["unmaintained"]
+format = "terminal"
+quiet = false

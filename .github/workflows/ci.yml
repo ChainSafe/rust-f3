@@ -1,0 +1,84 @@
+name: CI for rust-f3
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
+"on":
+  workflow_dispatch:
+  merge_group:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: 0 0 * * *
+env:
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: sccache
+  CC: sccache clang
+  CXX: sccache clang++
+jobs:
+  test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+        timeout-minutes: 5
+        continue-on-error: true
+      - name: Build
+        run: make check
+      - name: Test
+        run: make test
+
+  lint:
+    name: All lint checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+        timeout-minutes: 5
+        continue-on-error: true
+      - name: Install Lint tools
+        run: make install-lint-tools-ci
+        env:
+          RUSTFLAGS: "-Cstrip=symbols"
+      - name: Lint
+        run: make lint-all
+
+  dependencies-check:
+    name: Check cargo dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.0"
+      - name: Run dependencies checks
+        run: |
+          gem install toml-rb --no-document
+          ruby scripts/linters/find_unused_deps.rb
+  codedov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        env:
+          RUSTC_WRAPPER:
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lcov.info
+          path: lcov.info
+          if-no-files-found: error
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: false # Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.
+        with:
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true

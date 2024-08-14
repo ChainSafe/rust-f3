@@ -1,6 +1,12 @@
 [package]
 name = "filecoin-f3-gpbft"
 version = "0.1.0"
-edition = "2021"
+
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
 
 [dependencies]
+
+[dev-dependencies]

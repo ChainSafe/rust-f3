@@ -1,0 +1,20 @@
+[[disallowed-types]]
+path = "std::collections::HashMap"
+reason = """the standard library hasher is secure by default, but not very fast.
+use ahash::HashMap instead."""
+
+[[disallowed-types]]
+path = "std::collections::HashSet"
+reason = """the standard library hasher is secure by default, but not very fast.
+use ahash::HashSet instead."""
+
+# Banned in #2600, presumably so that poisoning won't need to be user-handled
+[[disallowed-types]]
+path = "std::sync::RwLock"
+reason = """the standard library synchronization primitives are poisoned when aquiring threads panic.
+use parking_lot::RwLock instead to silently ignore panics."""
+
+[[disallowed-types]]
+path = "std::sync::Mutex"
+reason = """the standard library synchronization primitives are poisoned when aquiring threads panic.
+use parking_lot::Mutex instead to silently ignore panics."""
