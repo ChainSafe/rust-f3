@@ -1,0 +1,7 @@
+[package]
+name = "filecoin-f3-certs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+filecoin-f3-gpbft = {path = "../gpbft"}
