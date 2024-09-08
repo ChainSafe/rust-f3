@@ -5,6 +5,7 @@ use filecoin_f3_gpbft::{
     PubKey, Sign, StoragePower, SupplementalData, Zero,
 };
 use std::collections::HashMap;
+use std::ops::Neg;
 
 pub struct PowerTableDelta {
     pub participant_id: ActorId,
@@ -200,4 +201,52 @@ pub fn apply_power_table_diffs(
     let mut new_power_table: PowerEntries = power_table_map.into_values().collect();
     new_power_table.sort();
     Ok(new_power_table)
+}
+
+pub fn make_power_table_diff(
+    old_power_table: &PowerEntries,
+    new_power_table: &PowerEntries,
+) -> PowerTableDiff {
+    let mut old_power_map: HashMap<ActorId, &PowerEntry> =
+        old_power_table.iter().map(|e| (e.id, e)).collect();
+
+    let mut diff = PowerTableDiff::new();
+
+    for new_entry in new_power_table.iter() {
+        let mut delta = PowerTableDelta {
+            participant_id: new_entry.id,
+            power_delta: StoragePower::from(0),
+            signing_key: Vec::new(),
+        };
+
+        let delta = match old_power_map.remove(&new_entry.id) {
+            Some(old_entry) => {
+                delta.power_delta = &new_entry.power - &old_entry.power;
+                if new_entry.pub_key != old_entry.pub_key {
+                    delta.signing_key = new_entry.pub_key.clone();
+                }
+                delta
+            }
+            None => {
+                delta.power_delta = new_entry.power.clone();
+                delta.signing_key = new_entry.pub_key.clone();
+                delta
+            }
+        };
+
+        if !delta.is_zero() {
+            diff.push(delta);
+        }
+    }
+
+    for old_entry in old_power_map.values() {
+        diff.push(PowerTableDelta {
+            participant_id: old_entry.id,
+            power_delta: old_entry.power.clone().neg(),
+            signing_key: Vec::new(),
+        });
+    }
+
+    diff.sort_by_key(|delta| delta.participant_id);
+    diff
 }

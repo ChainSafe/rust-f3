@@ -65,7 +65,10 @@ impl ECChain {
         for (i, ts) in self.iter().enumerate() {
             ts.validate().map_err(|e| format!("tipset {}: {}", i, e))?;
             if ts.epoch <= last_epoch {
-                return Err(format!("chain must have increasing epochs {} <= {}", ts.epoch, last_epoch));
+                return Err(format!(
+                    "chain must have increasing epochs {} <= {}",
+                    ts.epoch, last_epoch
+                ));
             }
             last_epoch = ts.epoch;
         }
