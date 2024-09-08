@@ -118,6 +118,11 @@ impl FinalityCertificate {
 //     Ok((next_instance, chain, prev_power_table))
 // }
 
+
+/// Apply a set of power table diffs to the passed power table.
+///
+/// - The delta must be sorted by participant ID, ascending.
+/// - The returned power table is sorted by power, descending.
 pub fn apply_power_table_diffs(
     prev_power_table: &PowerEntries,
     diffs: &[PowerTableDiff],
@@ -130,10 +135,13 @@ pub fn apply_power_table_diffs(
     for (j, diff) in diffs.iter().enumerate() {
         let mut last_actor_id = 0;
         for (i, d) in diff.iter().enumerate() {
+            // We assert this to make sure the finality certificate has a consistent power-table
+            // diff.
             if i > 0 && d.participant_id <= last_actor_id {
                 return Err(format!("diff {} not sorted by participant ID", j));
             }
 
+            // Empty power diffs aren't allowed.
             if d.is_zero() {
                 return Err(format!(
                     "diff {} contains an empty delta for participant {}",
@@ -144,6 +152,7 @@ pub fn apply_power_table_diffs(
             last_actor_id = d.participant_id;
 
             if !power_table_map.contains_key(&d.participant_id) {
+                // New power entries must specify positive power.
                 if d.power_delta <= StoragePower::from(0) {
                     return Err(format!("diff {} includes a new entry with a non-positive power delta for participant {}", j, d.participant_id));
                 }
@@ -157,7 +166,8 @@ pub fn apply_power_table_diffs(
                     pub_key: Vec::new(),
                 });
 
-            // This implicitly checks the key for emptiness on a new entry, because that is the
+            // Power deltas can't replace a key with the same key.
+            // This also implicitly checks the key for emptiness on a new entry, because that is the
             // default.
             if pe.pub_key == d.signing_key {
                 return Err(format!(
@@ -171,6 +181,7 @@ pub fn apply_power_table_diffs(
             }
 
             if !d.signing_key.is_empty() {
+                // If we end up with no power, we shouldn't replace the key.
                 // This condition will never be true for a new entry.
                 if pe.power.is_zero() {
                     return Err(format!(
@@ -203,6 +214,9 @@ pub fn apply_power_table_diffs(
     Ok(new_power_table)
 }
 
+/// Create a power table diff between the two given power tables. It makes no assumptions about
+/// order, but does assume that the power table entries are unique. The returned diff is sorted by
+/// participant ID ascending.
 pub fn make_power_table_diff(
     old_power_table: &PowerEntries,
     new_power_table: &PowerEntries,
