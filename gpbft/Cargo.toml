@@ -12,4 +12,4 @@ num-bigint = "0.4.6"
 num-traits = "0.2.19"
 fvm_ipld_bitfield = "0.6.0"
 anyhow = "1.0.86"
-
+keccak-hash = "0.10.0"
