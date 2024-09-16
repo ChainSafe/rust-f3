@@ -1,3 +1,6 @@
+use std::cmp;
+use std::fmt::Display;
+
 /// CHAIN_MAX_LEN specifies the maximum length of a chain value.
 pub const CHAIN_MAX_LEN: usize = 100;
 
@@ -12,6 +15,11 @@ pub const TIPSET_KEY_MAX_LEN: usize = 20 * CID_MAX_LEN;
 pub type TipsetKey = Vec<u8>;
 
 pub type Cid = Vec<u8>;
+
+/// A map key for a chain. The zero value means "bottom".
+/// Note that in reference Go implementation this is a string, but we use
+/// a byte slice here as in Rust a string is assumed to be UTF-8 encoded.
+type ChainKey = Vec<u8>;
 
 // Tipset represents a single EC tipset.
 #[derive(Clone, PartialEq, Eq)]
@@ -42,6 +50,10 @@ impl Tipset {
         }
         Ok(())
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.key.is_empty()
+    }
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -54,6 +66,9 @@ impl std::ops::Deref for ECChain {
     }
 }
 impl ECChain {
+    pub fn new(ts: Vec<Tipset>) -> Self {
+        ECChain(ts)
+    }
     pub fn validate(&self) -> anyhow::Result<(), String> {
         if self.is_empty() {
             return Ok(());
@@ -73,5 +88,117 @@ impl ECChain {
             last_epoch = ts.epoch;
         }
         Ok(())
+    }
+
+    pub fn has_suffix(&self) -> bool {
+        !self.suffix().is_empty()
+    }
+
+    pub fn base(&self) -> Option<&Tipset> {
+        self.get(0)
+    }
+
+    pub fn suffix(&self) -> &[Tipset] {
+        if self.is_empty() {
+            &[]
+        } else {
+            &self[1..]
+        }
+    }
+
+    pub fn base_chain(&self) -> Option<ECChain> {
+        self.base().map(|ts| ECChain(vec![ts.clone()]))
+    }
+
+    pub fn extend(&self, tips: &[TipsetKey]) -> Option<ECChain> {
+        let mut new_chain = self.clone();
+        let mut offset = self.last()?.epoch + 1;
+        let pt = self.last()?.power_table.clone();
+        for tip in tips {
+            new_chain.push(Tipset {
+                epoch: offset,
+                key: tip.clone(),
+                power_table: pt.clone(),
+                commitments: keccak_hash::H256::zero(),
+            });
+            offset += 1;
+        }
+        Some(new_chain)
+    }
+
+    pub fn prefix(&self, to: usize) -> anyhow::Result<ECChain> {
+        if self.is_zero() {
+            return Err("can't get prefix from zero-valued chain");
+        }
+        let length = cmp::min(to + 1, self.len());
+        ECChain(self[..length].to_vec())
+    }
+
+    pub fn same_base(&self, other: &ECChain) -> bool {
+        !self.is_empty() && !other.is_empty() && self.base() == other.base()
+    }
+
+    pub fn has_base(&self, t: &Tipset) -> bool {
+        if t.is_empty() || self.is_empty() {
+            return false;
+        }
+
+        if let Some(base) = self.base() {
+            return base == t;
+        }
+
+        false
+    }
+
+    pub fn has_prefix(&self, other: &ECChain) -> bool {
+        if self.is_empty() || other.is_empty() {
+            return false;
+        }
+        if other.len() > self.len() {
+            return false;
+        }
+
+        self[..other.len()] == other[..]
+    }
+
+    pub fn has_tipset(&self, t: &Tipset) -> bool {
+        !t.is_empty() && self.contains(t)
+    }
+
+    pub fn key(&self) -> ChainKey {
+        let mut capacity = self.len() * (8 + 32 + 4); // epoch + commitment + ts length
+        for ts in self.iter() {
+            capacity += ts.key.len() + ts.power_table.len();
+        }
+        let mut buf = Vec::with_capacity(capacity);
+        for ts in self.iter() {
+            buf.extend_from_slice(&ts.epoch.to_be_bytes());
+            buf.extend_from_slice(&ts.commitments.0);
+            buf.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
+            buf.extend_from_slice(&ts.key);
+            buf.extend_from_slice(&ts.power_table);
+        }
+        buf
+    }
+}
+
+impl Display for ECChain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_empty() {
+            return write!(f, "{}", "⊤".to_string());
+        }
+        let mut result = String::from("[");
+        for (i, ts) in self.iter().enumerate() {
+            result.push_str(&ts.to_string());
+            if i < self.len() - 1 {
+                result.push_str(", ");
+            }
+            if result.len() > 77 {
+                result.push_str("...");
+                break;
+            }
+        }
+        result.push(']');
+        write!(f, "{}", result)
     }
 }

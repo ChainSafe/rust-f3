@@ -86,7 +86,7 @@ impl FinalityCertificate {
 //             return Err(format!("invalid finality certificate at instance {}: {}", cert.gpbft_instance, e));
 //         }
 //
-//         if cert.ec_chain.is_zero() {
+//         if cert.ec_chain.is_empty() {
 //             return Err(format!("empty finality certificate for instance {}", cert.gpbft_instance));
 //         }
 //
@@ -117,7 +117,6 @@ impl FinalityCertificate {
 //
 //     Ok((next_instance, chain, prev_power_table))
 // }
-
 
 /// Apply a set of power table diffs to the passed power table.
 ///
