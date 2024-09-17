@@ -110,7 +110,7 @@ impl ECChain {
     }
 
     pub fn base(&self) -> Option<&Tipset> {
-        self.get(0)
+        self.first()
     }
 
     pub fn suffix(&self) -> &[Tipset] {
@@ -200,7 +200,7 @@ impl ECChain {
 impl Display for ECChain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.is_empty() {
-            return write!(f, "{}", "⊤".to_string());
+            return write!(f, "{}", "⊤");
         }
         let mut result = String::from("[");
         for (i, ts) in self.iter().enumerate() {

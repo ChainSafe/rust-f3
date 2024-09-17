@@ -1,12 +1,18 @@
 use crate::{ActorId, PubKey, StoragePower};
-use std::collections::HashMap;
+use ahash::HashMap;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Clone, Eq, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct PowerEntry {
     pub id: ActorId,
     pub power: StoragePower,
     pub pub_key: PubKey,
+}
+
+impl PartialOrd for PowerEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Ord for PowerEntry {
