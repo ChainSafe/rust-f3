@@ -200,7 +200,7 @@ impl ECChain {
 impl Display for ECChain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.is_empty() {
-            return write!(f, "{}", "⊤");
+            return write!(f, "丄");
         }
         let mut result = String::from("[");
         for (i, ts) in self.iter().enumerate() {
