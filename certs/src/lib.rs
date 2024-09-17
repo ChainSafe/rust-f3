@@ -1,6 +1,6 @@
 use filecoin_f3_gpbft::{
-    ActorId, BitField, ECChain, Justification, Phase, PowerEntries, PowerEntry,
-    PubKey, Sign, StoragePower, SupplementalData, Zero,
+    ActorId, BitField, ECChain, Justification, Phase, PowerEntries, PowerEntry, PubKey, Sign,
+    StoragePower, SupplementalData, Zero,
 };
 use std::collections::HashMap;
 use std::ops::Neg;

@@ -1,6 +1,6 @@
-use std::{cmp, fmt};
-use std::fmt::Display;
 use anyhow::anyhow;
+use std::fmt::Display;
+use std::{cmp, fmt};
 
 /// CHAIN_MAX_LEN specifies the maximum length of a chain value.
 pub const CHAIN_MAX_LEN: usize = 100;
