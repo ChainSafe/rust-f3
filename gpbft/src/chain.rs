@@ -1,5 +1,6 @@
-use std::cmp;
+use std::{cmp, fmt};
 use std::fmt::Display;
+use anyhow::anyhow;
 
 /// CHAIN_MAX_LEN specifies the maximum length of a chain value.
 pub const CHAIN_MAX_LEN: usize = 100;
@@ -56,6 +57,14 @@ impl Tipset {
     }
 }
 
+impl fmt::Display for Tipset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let enc_ts = base32::encode(base32::Alphabet::Rfc4648 { padding: true }, &self.key);
+        let display_len = cmp::min(16, enc_ts.len());
+        write!(f, "{}@{}", &enc_ts[..display_len], self.epoch)
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct ECChain(Vec<Tipset>);
 
@@ -63,6 +72,12 @@ impl std::ops::Deref for ECChain {
     type Target = Vec<Tipset>;
     fn deref(&self) -> &Vec<Tipset> {
         &self.0
+    }
+}
+
+impl std::ops::DerefMut for ECChain {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 impl ECChain {
@@ -127,11 +142,11 @@ impl ECChain {
     }
 
     pub fn prefix(&self, to: usize) -> anyhow::Result<ECChain> {
-        if self.is_zero() {
-            return Err("can't get prefix from zero-valued chain");
+        if self.is_empty() {
+            return Err(anyhow!("can't get prefix from zero-valued chain"));
         }
         let length = cmp::min(to + 1, self.len());
-        ECChain(self[..length].to_vec())
+        Ok(ECChain(self[..length].to_vec()))
     }
 
     pub fn same_base(&self, other: &ECChain) -> bool {
