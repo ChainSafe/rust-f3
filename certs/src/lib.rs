@@ -61,60 +61,6 @@ impl FinalityCertificate {
         })
     }
 }
-// WIP
-// pub fn validate_finality_certificates(
-//     verifier: &dyn Verifier,
-//     network: &NetworkName,
-//     prev_power_table: PowerEntries,
-//     next_instance: u64,
-//     base: Option<&Tipset>,
-//     certs: &[FinalityCertificate],
-// ) -> Result<(u64, ECChain, PowerEntries), String> {
-//     let mut next_instance = next_instance;
-//     let mut chain = ECChain::new();
-//     let mut prev_power_table = prev_power_table;
-//     let mut base = base;
-//
-//     for cert in certs {
-//         if cert.gpbft_instance != next_instance {
-//             return Err(format!("expected instance {}, found instance {}", next_instance, cert.gpbft_instance));
-//         }
-//
-//         if let Err(e) = cert.ec_chain.validate() {
-//             return Err(format!("invalid finality certificate at instance {}: {}", cert.gpbft_instance, e));
-//         }
-//
-//         if cert.ec_chain.is_empty() {
-//             return Err(format!("empty finality certificate for instance {}", cert.gpbft_instance));
-//         }
-//
-//         if let Some(b) = base {
-//             if !b.equal(cert.ec_chain.base()) {
-//                 return Err(format!("base tipset does not match finalized chain at instance {}", cert.gpbft_instance));
-//             }
-//         }
-//
-//         verifyFinalityCertificateSignature(verifier, &prev_power_table, network, cert)?;
-//
-//         let new_power_table = ApplyPowerTableDiffs(&prev_power_table, &cert.power_table_delta)?;
-//
-//         let power_table_cid = MakePowerTableCID(&new_power_table)?;
-//
-//         if cert.supplemental_data.power_table != power_table_cid {
-//             return Err(format!(
-//                 "incorrect power diff from finality certificate for instance {}: expected {:?}, got {:?}",
-//                 cert.gpbft_instance, cert.supplemental_data.power_table, power_table_cid
-//             ));
-//         }
-//
-//         next_instance += 1;
-//         chain.extend(cert.ec_chain.suffix());
-//         prev_power_table = new_power_table;
-//         base = Some(cert.ec_chain.head());
-//     }
-//
-//     Ok((next_instance, chain, prev_power_table))
-// }
 
 /// Apply a set of power table diffs to the passed power table.
 ///
