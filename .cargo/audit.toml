@@ -5,7 +5,9 @@
 # These should all have either:
 # - tracking issues with the "security" label
 # - reasons why they're ignored
-ignore = []
+ignore = [
+  "RUSTSEC-2024-0370", # proc-macro-error is unmaintained, depended upon by `fvm_ipld_bitfield`
+]
 
 [output]
 deny = ["unmaintained"]

@@ -8,9 +8,9 @@ license.workspace = true
 edition.workspace = true
 
 [dependencies]
+anyhow = "1.0.86"
+base32 = "0.5.1"
+fvm_ipld_bitfield = "0.6.0"
+keccak-hash = "0.10.0"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
-fvm_ipld_bitfield = "0.6.0"
-anyhow = "1.0.86"
-keccak-hash = "0.10.0"
-base32 = "0.5.1"

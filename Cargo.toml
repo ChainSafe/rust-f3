@@ -1,9 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-  "blssig", "certs",
-  "gpbft"
-]
+members = ["blssig", "certs", "gpbft"]
 
 [workspace.package]
 authors = ["ChainSafe Systems <forest@chainsafe.io>"]
