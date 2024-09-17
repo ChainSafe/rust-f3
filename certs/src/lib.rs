@@ -1,7 +1,5 @@
-use filecoin_f3_gpbft::api::Verifier;
-use filecoin_f3_gpbft::chain::Tipset;
 use filecoin_f3_gpbft::{
-    ActorId, BitField, ECChain, Justification, NetworkName, Phase, PowerEntries, PowerEntry,
+    ActorId, BitField, ECChain, Justification, Phase, PowerEntries, PowerEntry,
     PubKey, Sign, StoragePower, SupplementalData, Zero,
 };
 use std::collections::HashMap;
