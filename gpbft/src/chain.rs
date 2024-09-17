@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::anyhow;
 use std::fmt::Display;
 use std::{cmp, fmt};
