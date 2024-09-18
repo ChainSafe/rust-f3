@@ -25,7 +25,7 @@ pub type Cid = Vec<u8>;
 /// a byte slice here as in Rust a string is assumed to be UTF-8 encoded.
 type ChainKey = Vec<u8>;
 
-// Tipset represents a single EC tipset.
+/// Tipset represents a single EC tipset.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Tipset {
     /// The EC epoch (strictly increasing).
@@ -39,6 +39,13 @@ pub struct Tipset {
 }
 
 impl Tipset {
+    /// Validates the tipset
+    ///
+    /// Checks if the tipset key is not empty and not too long,
+    /// and if the power table CID is not empty and not too long.
+    ///
+    /// # Returns
+    /// A Result indicating success or failure with an error message
     pub fn validate(&self) -> Result<(), String> {
         if self.key.is_empty() {
             return Err("tipset key must not be empty".to_string());
@@ -55,6 +62,7 @@ impl Tipset {
         Ok(())
     }
 
+    /// Checks if the tipset is empty
     pub fn is_empty(&self) -> bool {
         self.key.is_empty()
     }
@@ -68,6 +76,14 @@ impl fmt::Display for Tipset {
     }
 }
 
+/// A chain of tipsets comprising a base and a possibly empty suffix
+///
+/// The base is the last finalized tipset from which the chain extends.
+/// Tipsets are assumed to be built contiguously on each other,
+/// though epochs may be missing due to null rounds.
+///
+/// The zero value (empty chain) is not valid and represents a "bottom" value
+/// when used in a GPBFT message.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ECChain(Vec<Tipset>);
 
@@ -84,9 +100,23 @@ impl std::ops::DerefMut for ECChain {
     }
 }
 impl ECChain {
-    pub fn new(ts: Vec<Tipset>) -> Self {
-        ECChain(ts)
+    /// Creates a new ECChain with a base tipset and optional suffix
+    ///
+    /// # Arguments
+    /// * `base` - The base tipset
+    /// * `suffix` - Optional additional tipsets
+    ///
+    /// # Returns
+    /// A Result containing the new ECChain
+    pub fn new(base: Tipset, suffix: Vec<Tipset>) -> Result<Self, String> {
+        let mut tipsets = vec![base];
+        tipsets.extend(suffix);
+        let chain = ECChain(tipsets);
+        chain.validate()?;
+        Ok(chain)
     }
+
+    /// Validates the chain
     pub fn validate(&self) -> anyhow::Result<(), String> {
         if self.is_empty() {
             return Ok(());
@@ -108,14 +138,17 @@ impl ECChain {
         Ok(())
     }
 
+    /// Checks if the ECChain has a non-empty suffix
     pub fn has_suffix(&self) -> bool {
         !self.suffix().is_empty()
     }
 
+    /// Returns the base tipset of the chain
     pub fn base(&self) -> Option<&Tipset> {
         self.first()
     }
 
+    /// Returns the suffix of the chain after the base
     pub fn suffix(&self) -> &[Tipset] {
         if self.is_empty() {
             &[]
@@ -124,10 +157,12 @@ impl ECChain {
         }
     }
 
+    /// Returns a new chain with the same base and no suffix
     pub fn base_chain(&self) -> Option<ECChain> {
         self.base().map(|ts| ECChain(vec![ts.clone()]))
     }
 
+    /// Extends the chain with new tipset keys
     pub fn extend(&self, tips: &[TipsetKey]) -> Option<ECChain> {
         let mut new_chain = self.clone();
         let mut offset = self.last()?.epoch + 1;
@@ -144,6 +179,7 @@ impl ECChain {
         Some(new_chain)
     }
 
+    /// Returns a chain with suffix truncated to a maximum length
     pub fn prefix(&self, to: usize) -> anyhow::Result<ECChain> {
         if self.is_empty() {
             return Err(anyhow!("can't get prefix from zero-valued chain"));
@@ -152,10 +188,12 @@ impl ECChain {
         Ok(ECChain(self[..length].to_vec()))
     }
 
+    /// Checks if two chains have the same base
     pub fn same_base(&self, other: &ECChain) -> bool {
         !self.is_empty() && !other.is_empty() && self.base() == other.base()
     }
 
+    /// Checks if the chain has a specific base tipset
     pub fn has_base(&self, t: &Tipset) -> bool {
         if t.is_empty() || self.is_empty() {
             return false;
@@ -168,6 +206,7 @@ impl ECChain {
         false
     }
 
+    /// Checks if the chain has a specific prefix
     pub fn has_prefix(&self, other: &ECChain) -> bool {
         if self.is_empty() || other.is_empty() {
             return false;
@@ -179,10 +218,12 @@ impl ECChain {
         self[..other.len()] == other[..]
     }
 
+    /// Checks if the chain contains a specific tipset
     pub fn has_tipset(&self, t: &Tipset) -> bool {
         !t.is_empty() && self.contains(t)
     }
 
+    /// Returns an identifier for the chain suitable for use as a map key
     pub fn key(&self) -> ChainKey {
         let mut capacity = self.len() * (8 + 32 + 4); // epoch + commitment + ts length
         for ts in self.iter() {

@@ -1,6 +1,25 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+/// The `certs` package provides functionality for handling finality certificates in the GPBFT consensus protocol.
+///
+/// This package includes:
+/// - Structures and types for representing finality certificates and power table changes
+/// - Functions for creating and applying power table diffs
+/// - Methods for verifying finality certificates
+///
+/// Key components:
+/// - `FinalityCertificate`: Represents a single finalized GPBFT instance
+/// - `PowerTableDelta`: Represents a change in power for a single participant
+/// - `PowerTableDiff`: A collection of power table deltas
+///
+/// The package allows for:
+/// - Creating new finality certificates from justifications
+/// - Applying power table diffs to update the network's power distribution
+/// - Verifying the signatures of finality certificates
+///
+/// Note: The signature verification only checks that the certificate's value has been signed by a majority
+/// of the power. It does not validate the power delta or other parts of the certificate.
 use ahash::HashMap;
 use filecoin_f3_gpbft::{
     ActorId, BitField, ECChain, Justification, Phase, PowerEntries, PowerEntry, PubKey, Sign,
@@ -8,30 +27,62 @@ use filecoin_f3_gpbft::{
 };
 use std::ops::Neg;
 
+/// PowerTableDelta represents a single power table change between GPBFT instances. If the resulting
+/// power is 0 after applying the delta, the participant is removed from the power table.
 pub struct PowerTableDelta {
+    /// Participant with changed power
     pub participant_id: ActorId,
+    /// Change in power from base (signed)
     pub power_delta: StoragePower,
+    /// New signing key if relevant (else empty)
     pub signing_key: PubKey,
 }
 
 impl PowerTableDelta {
+    /// Checks if the power delta is zero (no change)
+    ///
+    /// Returns true if both the power_delta is zero and the signing_key is empty,
+    /// indicating no change for this participant.
     pub fn is_zero(&self) -> bool {
         self.power_delta.is_zero() && self.signing_key.is_empty()
     }
 }
 
+/// Represents a set of changes to the power table
+///
+/// PowerTableDiff is a collection of individual power table deltas, each representing
+/// a change in power or signing key for a specific participant in the network.
+/// It is used to track and apply changes to the power table between GPBFT instances.
 pub type PowerTableDiff = Vec<PowerTableDelta>;
 
+/// Represents a single finalized GPBFT instance
 pub struct FinalityCertificate {
+    /// The GPBFT instance to which this finality certificate corresponds
     pub gpbft_instance: u64,
+    /// The ECChain finalized during this instance, starting with the last tipset finalized in
+    /// the previous instance
     pub ec_chain: ECChain,
+    /// Additional data signed by the participants in this instance. Currently used to certify
+    /// the power table used in the next instance
     pub supplemental_data: SupplementalData,
+    /// Indexes in the base power table of the certifiers (bitset)
     pub signers: BitField,
+    /// Aggregated signature of the certifiers
     pub signature: Vec<u8>,
+    /// Changes between the power table used to validate this finality certificate and the power
+    /// used to validate the next finality certificate. Sorted by ParticipantID, ascending
     pub power_table_delta: PowerTableDiff,
 }
 
 impl FinalityCertificate {
+    /// Creates a new FinalityCertificate from a PowerTableDiff and a Justification
+    ///
+    /// # Arguments
+    /// * `power_delta` - The changes in the power table
+    /// * `justification` - The justification for the decision
+    ///
+    /// # Returns
+    /// A Result containing the new FinalityCertificate if successful
     pub fn new(power_delta: PowerTableDiff, justification: &Justification) -> Result<Self, String> {
         if justification.vote.step != Phase::Decide {
             return Err(format!(

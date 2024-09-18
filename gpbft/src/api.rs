@@ -3,11 +3,42 @@
 
 use crate::PubKey;
 
+/// Verifier trait for signature verification in the GPBFT consensus protocol
 pub trait Verifier {
+    /// Verifies a signature for the given public key
+    ///
+    /// This method must be safe for concurrent use.
+    ///
+    /// # Arguments
+    /// * `pub_key` - The public key to verify against
+    /// * `msg` - The message that was signed
+    /// * `sig` - The signature to verify
+    ///
+    /// # Returns
+    /// A Result indicating success or failure with an error message
     fn verify(&self, pub_key: &PubKey, msg: &[u8], sig: &[u8]) -> Result<(), String>;
 
+    /// Aggregates signatures from participants
+    ///
+    /// # Arguments
+    /// * `pub_keys` - The public keys of the signers
+    /// * `sigs` - The signatures to aggregate
+    ///
+    /// # Returns
+    /// A Result containing the aggregated signature
     fn aggregate(&self, pub_keys: &[PubKey], sigs: &[Vec<u8>]) -> Result<Vec<u8>, String>;
 
+    /// Verifies an aggregate signature
+    ///
+    /// This method must be safe for concurrent use.
+    ///
+    /// # Arguments
+    /// * `payload` - The payload that was signed
+    /// * `agg_sig` - The aggregate signature to verify
+    /// * `signers` - The public keys of the signers
+    ///
+    /// # Returns
+    /// A Result indicating success or failure with an error message
     fn verify_aggregate(
         &self,
         payload: &[u8],

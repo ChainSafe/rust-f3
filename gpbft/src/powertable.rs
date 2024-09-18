@@ -5,10 +5,14 @@ use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
 use std::ops::{Deref, DerefMut};
 
+/// Represents a participant's power and public key in the network
 #[derive(Clone, Eq, PartialEq)]
 pub struct PowerEntry {
+    /// Unique identifier for the participant
     pub id: ActorId,
+    /// The amount of storage power the participant has
     pub power: StoragePower,
+    /// The public key of the participant
     pub pub_key: PubKey,
 }
 
@@ -28,6 +32,7 @@ impl Ord for PowerEntry {
     }
 }
 
+/// A collection of PowerEntry instances representing the power distribution in the network
 pub struct PowerEntries(Vec<PowerEntry>);
 
 impl Deref for PowerEntries {
@@ -48,10 +53,16 @@ impl FromIterator<PowerEntry> for PowerEntries {
     }
 }
 
+/// Represents the power distribution and lookup table for actors in the network
 pub struct PowerTable {
+    /// Ordered list of power entries, maintained in descending order by power and ascending order by ID
     pub entries: PowerEntries,
+    /// Scaled power values for each entry
     pub scaled_power: Vec<u16>,
+    /// Maps ActorId to the index of the associated entry in entries
     pub lookup: HashMap<ActorId, usize>,
+    /// Total storage power in the network
     pub total: StoragePower,
+    /// Total scaled power in the network
     pub scaled_total: u16,
 }
