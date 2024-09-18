@@ -8,7 +8,7 @@
 //! - Power table management for validator voting power tracking
 //! - Consensus phases and payload structures
 //! - Justification and verification mechanisms
-//! - Network types such as ActorId, StoragePower, and PubKey
+//! - Network types such as `ActorId`, `StoragePower`, and `PubKey`
 //!
 //! Key components:
 //! - [`ECChain`]: Represents a chain of tipsets
@@ -49,7 +49,7 @@ pub struct SupplementalData {
     pub commitments: keccak_hash::H256,
     /// The DagCBOR-blake2b256 CID of the power table used to validate the next instance
     ///
-    /// This takes lookback into account and represents a []PowerEntry.
+    /// This takes look-back into account and represents a `[]PowerEntry`.
     /// The CID is limited to a maximum length of 38 bytes.
     pub power_table: Cid,
 }
@@ -122,7 +122,7 @@ impl Payload {
 pub struct Justification {
     /// The payload that is signed by the signature
     pub vote: Payload,
-    /// Indexes in the base power table of the signers (bitset)
+    /// Indexes in the base power table of the signers (`bitset`)
     pub signers: BitField,
     /// BLS aggregate signature of signers
     pub signature: Vec<u8>,

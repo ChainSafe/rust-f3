@@ -5,13 +5,13 @@ use anyhow::anyhow;
 use std::fmt::Display;
 use std::{cmp, fmt};
 
-/// CHAIN_MAX_LEN specifies the maximum length of a chain value.
+/// `CHAIN_MAX_LEN` specifies the maximum length of a chain value.
 pub const CHAIN_MAX_LEN: usize = 100;
 
-/// CID_MAX_LEN specifies the maximum length of a CID.
+/// `CID_MAX_LEN` specifies the maximum length of a CID.
 pub const CID_MAX_LEN: usize = 38;
 
-/// TIPSET_KEY_MAX_LEN specifies the maximum length of a tipset. The max size is
+/// `TIPSET_KEY_MAX_LEN` specifies the maximum length of a tipset. The max size is
 /// chosen such that it allows ample space for an impossibly-unlikely number of
 /// blocks in a tipset, while maintaining a practical limit to prevent abuse.
 pub const TIPSET_KEY_MAX_LEN: usize = 20 * CID_MAX_LEN;

@@ -27,7 +27,7 @@ use filecoin_f3_gpbft::{
 };
 use std::ops::Neg;
 
-/// PowerTableDelta represents a single power table change between GPBFT instances. If the resulting
+/// `PowerTableDelta` represents a single power table change between GPBFT instances. If the resulting
 /// power is 0 after applying the delta, the participant is removed from the power table.
 pub struct PowerTableDelta {
     /// Participant with changed power
@@ -41,7 +41,7 @@ pub struct PowerTableDelta {
 impl PowerTableDelta {
     /// Checks if the power delta is zero (no change)
     ///
-    /// Returns true if both the power_delta is zero and the signing_key is empty,
+    /// Returns true if both the `power_delta` is zero and the `signing_key` is empty,
     /// indicating no change for this participant.
     pub fn is_zero(&self) -> bool {
         self.power_delta.is_zero() && self.signing_key.is_empty()
@@ -50,7 +50,7 @@ impl PowerTableDelta {
 
 /// Represents a set of changes to the power table
 ///
-/// PowerTableDiff is a collection of individual power table deltas, each representing
+/// `PowerTableDiff` is a collection of individual power table deltas, each representing
 /// a change in power or signing key for a specific participant in the network.
 /// It is used to track and apply changes to the power table between GPBFT instances.
 pub type PowerTableDiff = Vec<PowerTableDelta>;
@@ -65,24 +65,24 @@ pub struct FinalityCertificate {
     /// Additional data signed by the participants in this instance. Currently used to certify
     /// the power table used in the next instance
     pub supplemental_data: SupplementalData,
-    /// Indexes in the base power table of the certifiers (bitset)
+    /// Indexes in the base power table of the `certifiers` (`bitset`)
     pub signers: BitField,
-    /// Aggregated signature of the certifiers
+    /// Aggregated signature of the `certifiers`
     pub signature: Vec<u8>,
     /// Changes between the power table used to validate this finality certificate and the power
-    /// used to validate the next finality certificate. Sorted by ParticipantID, ascending
+    /// used to validate the next finality certificate. Sorted by `ParticipantID`, ascending
     pub power_table_delta: PowerTableDiff,
 }
 
 impl FinalityCertificate {
-    /// Creates a new FinalityCertificate from a PowerTableDiff and a Justification
+    /// Creates a new `FinalityCertificate` from a `PowerTableDiff` and a Justification
     ///
     /// # Arguments
     /// * `power_delta` - The changes in the power table
     /// * `justification` - The justification for the decision
     ///
     /// # Returns
-    /// A Result containing the new FinalityCertificate if successful
+    /// A Result containing the new `FinalityCertificate` if successful
     pub fn new(power_delta: PowerTableDiff, justification: &Justification) -> Result<Self, String> {
         if justification.vote.step != Phase::Decide {
             return Err(format!(

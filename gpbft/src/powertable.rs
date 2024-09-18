@@ -32,7 +32,7 @@ impl Ord for PowerEntry {
     }
 }
 
-/// A collection of PowerEntry instances representing the power distribution in the network
+/// A collection of `PowerEntry` instances representing the power distribution in the network
 pub struct PowerEntries(Vec<PowerEntry>);
 
 impl Deref for PowerEntries {
@@ -59,7 +59,7 @@ pub struct PowerTable {
     pub entries: PowerEntries,
     /// Scaled power values for each entry
     pub scaled_power: Vec<u16>,
-    /// Maps ActorId to the index of the associated entry in entries
+    /// Maps `ActorId` to the index of the associated entry in entries
     pub lookup: HashMap<ActorId, usize>,
     /// Total storage power in the network
     pub total: StoragePower,
