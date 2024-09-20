@@ -15,10 +15,7 @@ Rust F3 implementation.
 
 ### Rough diagram
 
----
-config:
-layout: elk
----
+```mermaid
 flowchart TD
 subgraph s1["F3 instance"]
 n1["Certificates<br>* verification<br>* creation<br><br>"]
@@ -35,6 +32,7 @@ n4 <--> n9("Network")
 n6 <--> n9
 n2 --> n4
 n2 --> n7
+```
 
 
 ### GPBFT consensus primitives and logic.
