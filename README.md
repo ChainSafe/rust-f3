@@ -75,3 +75,8 @@ Where it all comes together
 * runs the consensus instance + libp2p exchange
 * runs the certificate exchange client/server via libp2p
 * manifest provider - f3 config updates via libp2p
+
+### FAQ
+1. What is a finality certificate?
+   * A certificate that proves that a given chain prefix is final. It must be signed by a super-majority
+   of a power table.
