@@ -26,7 +26,7 @@ pub type Cid = Vec<u8>;
 type ChainKey = Vec<u8>;
 
 /// Tipset represents a single EC tipset.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tipset {
     /// The EC epoch (strictly increasing).
     pub epoch: i64,
@@ -84,8 +84,8 @@ impl fmt::Display for Tipset {
 ///
 /// The zero value (empty chain) is not valid and represents a "bottom" value
 /// when used in a GPBFT message.
-#[derive(Clone, PartialEq, Eq)]
-pub struct ECChain(Vec<Tipset>);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ECChain(pub Vec<Tipset>);
 
 impl std::ops::Deref for ECChain {
     type Target = Vec<Tipset>;
@@ -108,6 +108,8 @@ impl ECChain {
     ///
     /// # Returns
     /// A Result containing the new ECChain
+    ///
+    /// Note: To conform to the reference implementation we should allow empty ECChain.
     pub fn new(base: Tipset, suffix: Vec<Tipset>) -> Result<Self, String> {
         let mut tipsets = vec![base];
         tipsets.extend(suffix);

@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 ahash = { workspace = true }
 filecoin-f3-gpbft = { path = "../gpbft" }
+keccak-hash = { workspace = true }

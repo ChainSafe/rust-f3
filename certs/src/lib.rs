@@ -29,6 +29,7 @@ use std::ops::Neg;
 
 /// `PowerTableDelta` represents a single power table change between GPBFT instances. If the resulting
 /// power is 0 after applying the delta, the participant is removed from the power table.
+#[derive(Debug)]
 pub struct PowerTableDelta {
     /// Participant with changed power
     pub participant_id: ActorId,
@@ -56,6 +57,7 @@ impl PowerTableDelta {
 pub type PowerTableDiff = Vec<PowerTableDelta>;
 
 /// Represents a single finalized GPBFT instance
+#[derive(Debug)]
 pub struct FinalityCertificate {
     /// The GPBFT instance to which this finality certificate corresponds
     pub gpbft_instance: u64,
@@ -260,4 +262,113 @@ pub fn make_power_table_diff(
 
     diff.sort_by_key(|delta| delta.participant_id);
     diff
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use filecoin_f3_gpbft::chain::Tipset;
+    use filecoin_f3_gpbft::Payload;
+
+    #[test]
+    fn test_power_table_delta_is_zero() {
+        let zero_delta = PowerTableDelta {
+            participant_id: 1,
+            power_delta: StoragePower::from(0),
+            signing_key: Vec::new(),
+        };
+        assert!(zero_delta.is_zero());
+
+        let non_zero_power_delta = PowerTableDelta {
+            participant_id: 1,
+            power_delta: StoragePower::from(100),
+            signing_key: Vec::new(),
+        };
+        assert!(!non_zero_power_delta.is_zero());
+
+        let non_zero_key_delta = PowerTableDelta {
+            participant_id: 1,
+            power_delta: StoragePower::from(0),
+            signing_key: vec![1, 2, 3],
+        };
+        assert!(!non_zero_key_delta.is_zero());
+    }
+
+    fn create_mock_justification(step: Phase) -> Justification {
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: vec![4, 5, 6],
+            commitments: keccak_hash::H256::zero(),
+        };
+        Justification {
+            vote: Payload {
+                instance: 1,
+                round: 0,
+                step,
+                supplemental_data: SupplementalData {
+                    commitments: keccak_hash::H256::zero(),
+                    power_table: vec![],
+                },
+                value: ECChain::new(base_tipset, vec![]).unwrap(),
+            },
+            signers: BitField::new(),
+            signature: vec![7, 8, 9],
+        }
+    }
+
+    #[test]
+    fn test_finality_certificate_new_success() {
+        let power_delta = PowerTableDiff::new();
+        let justification = create_mock_justification(Phase::Decide);
+
+        let result = FinalityCertificate::new(power_delta, &justification);
+        assert!(result.is_ok());
+
+        let cert = result.unwrap();
+        assert_eq!(cert.gpbft_instance, justification.vote.instance);
+        assert_eq!(cert.ec_chain, justification.vote.value);
+        assert_eq!(cert.supplemental_data, justification.vote.supplemental_data);
+        assert_eq!(cert.signers, justification.signers);
+        assert_eq!(cert.signature, justification.signature);
+    }
+
+    #[test]
+    fn test_finality_certificate_new_wrong_phase() {
+        let power_delta = PowerTableDiff::new();
+        let justification = create_mock_justification(Phase::Commit);
+
+        let result = FinalityCertificate::new(power_delta, &justification);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("can only create a finality certificate from a decide vote"));
+    }
+
+    #[test]
+    fn test_finality_certificate_new_wrong_round() {
+        let power_delta = PowerTableDiff::new();
+        let mut justification = create_mock_justification(Phase::Decide);
+        justification.vote.round = 1;
+
+        let result = FinalityCertificate::new(power_delta, &justification);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("expected decide round to be 0"));
+    }
+
+    // It makes no sense that ECChain can be empty. Perhaps this warrants a discussion.
+    #[test]
+    fn test_finality_certificate_new_empty_value() {
+        let power_delta = PowerTableDiff::new();
+        let mut justification = create_mock_justification(Phase::Decide);
+        justification.vote.value = ECChain(Vec::new());
+
+        let result = FinalityCertificate::new(power_delta, &justification);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("got a decision for bottom for instance"));
+    }
 }

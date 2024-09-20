@@ -40,7 +40,7 @@ pub use crate::chain::{Cid, ECChain};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
 
 /// Additional data signed by participants in a GPBFT instance
-#[derive(PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SupplementalData {
     /// Merkle-tree root of instance-specific commitments
     ///
