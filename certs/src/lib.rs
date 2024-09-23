@@ -371,4 +371,94 @@ mod tests {
             .unwrap_err()
             .contains("got a decision for bottom for instance"));
     }
+
+    #[test]
+    fn test_make_power_table_diff() {
+        let old_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: vec![1, 2, 3],
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: vec![4, 5, 6],
+            },
+        ];
+        let new_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(150),
+                pub_key: vec![1, 2, 3],
+            },
+            PowerEntry {
+                id: 3,
+                power: StoragePower::from(300),
+                pub_key: vec![7, 8, 9],
+            },
+        ];
+
+        let diff = make_power_table_diff(
+            &PowerEntries(old_power_table),
+            &PowerEntries(new_power_table),
+        );
+
+        assert_eq!(diff.len(), 3);
+        assert_eq!(diff[0].participant_id, 1);
+        assert_eq!(diff[0].power_delta, StoragePower::from(50));
+        assert!(diff[0].signing_key.is_empty());
+        assert_eq!(diff[1].participant_id, 2);
+        assert_eq!(diff[1].power_delta, StoragePower::from(-200));
+        assert!(diff[1].signing_key.is_empty());
+        assert_eq!(diff[2].participant_id, 3);
+        assert_eq!(diff[2].power_delta, StoragePower::from(300));
+        assert_eq!(diff[2].signing_key, vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn test_apply_power_table_diffs() {
+        let prev_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: vec![1, 2, 3],
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: vec![4, 5, 6],
+            },
+        ];
+
+        let diffs = vec![
+            vec![
+                PowerTableDelta {
+                    participant_id: 1,
+                    power_delta: StoragePower::from(50),
+                    signing_key: vec![],
+                },
+                PowerTableDelta {
+                    participant_id: 3,
+                    power_delta: StoragePower::from(300),
+                    signing_key: vec![7, 8, 9],
+                },
+            ],
+            vec![PowerTableDelta {
+                participant_id: 2,
+                power_delta: StoragePower::from(-200),
+                signing_key: vec![],
+            }],
+        ];
+
+        let result = apply_power_table_diffs(&PowerEntries(prev_power_table), &diffs).unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].id, 3);
+        assert_eq!(result[0].power, StoragePower::from(300));
+        assert_eq!(result[0].pub_key, vec![7, 8, 9]);
+        assert_eq!(result[1].id, 1);
+        assert_eq!(result[1].power, StoragePower::from(150));
+        assert_eq!(result[1].pub_key, vec![1, 2, 3]);
+    }
 }

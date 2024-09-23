@@ -38,7 +38,7 @@ impl Ord for PowerEntry {
 }
 
 /// A collection of `PowerEntry` instances representing the power distribution in the network
-pub struct PowerEntries(Vec<PowerEntry>);
+pub struct PowerEntries(pub Vec<PowerEntry>);
 
 impl Deref for PowerEntries {
     type Target = Vec<PowerEntry>;

@@ -30,7 +30,6 @@ mod powertable;
 mod types;
 
 pub use powertable::{PowerEntries, PowerEntry, PowerTable};
-use std::fmt;
 
 // re-exports
 pub use fvm_ipld_bitfield::BitField;
