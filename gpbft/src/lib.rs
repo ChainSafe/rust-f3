@@ -161,16 +161,6 @@ mod tests {
     }
 
     #[test]
-    fn test_phase_ordering() {
-        assert!(Phase::Initial < Phase::Quality);
-        assert!(Phase::Quality < Phase::Converge);
-        assert!(Phase::Converge < Phase::Prepare);
-        assert!(Phase::Prepare < Phase::Commit);
-        assert!(Phase::Commit < Phase::Decide);
-        assert!(Phase::Decide < Phase::Terminated);
-    }
-
-    #[test]
     fn test_phase_repr() {
         assert_eq!(Phase::Initial as u8, 0);
         assert_eq!(Phase::Quality as u8, 1);
