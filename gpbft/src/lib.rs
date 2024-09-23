@@ -30,11 +30,13 @@ mod powertable;
 mod types;
 
 pub use powertable::{PowerEntries, PowerEntry, PowerTable};
+use std::fmt;
 
 // re-exports
 pub use fvm_ipld_bitfield::BitField;
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
+use strum_macros::Display;
 
 pub use crate::chain::{Cid, ECChain};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
@@ -56,7 +58,8 @@ pub struct SupplementalData {
 
 /// Represents the different phases of the GPBFT consensus protocol
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Display, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum Phase {
     /// This phase marks the beginning of a new consensus round. During this phase,
     /// participants typically initialize their local state and prepare for the
@@ -126,4 +129,67 @@ pub struct Justification {
     pub signers: BitField,
     /// BLS aggregate signature of signers
     pub signature: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_payload_new() {
+        let instance = 1;
+        let round = 2;
+        let step = Phase::Commit;
+        let supplemental_data = SupplementalData {
+            commitments: keccak_hash::H256::zero(),
+            power_table: vec![],
+        };
+        let value = ECChain(Vec::new());
+
+        let payload = Payload::new(
+            instance,
+            round,
+            step,
+            supplemental_data.clone(),
+            value.clone(),
+        );
+
+        assert_eq!(payload.instance, instance);
+        assert_eq!(payload.round, round);
+        assert_eq!(payload.step, step);
+        assert_eq!(payload.supplemental_data, supplemental_data);
+        assert_eq!(payload.value, value);
+    }
+
+    #[test]
+    fn test_phase_ordering() {
+        assert!(Phase::Initial < Phase::Quality);
+        assert!(Phase::Quality < Phase::Converge);
+        assert!(Phase::Converge < Phase::Prepare);
+        assert!(Phase::Prepare < Phase::Commit);
+        assert!(Phase::Commit < Phase::Decide);
+        assert!(Phase::Decide < Phase::Terminated);
+    }
+
+    #[test]
+    fn test_phase_repr() {
+        assert_eq!(Phase::Initial as u8, 0);
+        assert_eq!(Phase::Quality as u8, 1);
+        assert_eq!(Phase::Converge as u8, 2);
+        assert_eq!(Phase::Prepare as u8, 3);
+        assert_eq!(Phase::Commit as u8, 4);
+        assert_eq!(Phase::Decide as u8, 5);
+        assert_eq!(Phase::Terminated as u8, 6);
+    }
+
+    #[test]
+    fn test_phase_display() {
+        assert_eq!(format!("{}", Phase::Initial), "INITIAL");
+        assert_eq!(format!("{}", Phase::Quality), "QUALITY");
+        assert_eq!(format!("{}", Phase::Converge), "CONVERGE");
+        assert_eq!(format!("{}", Phase::Prepare), "PREPARE");
+        assert_eq!(format!("{}", Phase::Commit), "COMMIT");
+        assert_eq!(format!("{}", Phase::Decide), "DECIDE");
+        assert_eq!(format!("{}", Phase::Terminated), "TERMINATED");
+    }
 }

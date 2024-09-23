@@ -15,3 +15,5 @@ fvm_ipld_bitfield = "0.6.0"
 keccak-hash = {workspace = true}
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
+strum = "0.26.0"
+strum_macros = "0.26"
