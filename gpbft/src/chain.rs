@@ -263,3 +263,210 @@ impl Display for ECChain {
         write!(f, "{}", result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_tipset(epoch: i64) -> Tipset {
+        Tipset {
+            epoch,
+            key: vec![1; TIPSET_KEY_MAX_LEN / 2],
+            power_table: vec![1; CID_MAX_LEN / 2],
+            commitments: keccak_hash::H256::zero(),
+        }
+    }
+
+    #[test]
+    fn test_tipset_create_and_validate() {
+        let tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: vec![4, 5, 6],
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        assert_eq!(tipset.epoch, 1);
+        assert_eq!(tipset.key, vec![1, 2, 3]);
+        assert_eq!(tipset.power_table, vec![4, 5, 6]);
+        assert_eq!(tipset.commitments, keccak_hash::H256::zero());
+
+        assert!(tipset.validate().is_ok());
+    }
+
+    #[test]
+    fn test_tipset_is_empty() {
+        let empty_tipset = Tipset {
+            epoch: 0,
+            key: vec![],
+            power_table: vec![],
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        assert!(empty_tipset.is_empty());
+
+        let non_empty_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: vec![4, 5, 6],
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        assert!(!non_empty_tipset.is_empty());
+    }
+
+    #[test]
+    fn test_tipset_display() {
+        let tipset = Tipset {
+            epoch: 10,
+            key: vec![1, 2, 3],
+            power_table: vec![4, 5, 6],
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let display_string = format!("{}", tipset);
+        assert!(display_string.contains("@10"));
+    }
+
+    #[test]
+    fn test_ecchain_new() {
+        let base = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: vec![4, 5, 6],
+            commitments: keccak_hash::H256::zero(),
+        };
+        let suffix = vec![
+            Tipset {
+                epoch: 2,
+                key: vec![7, 8, 9],
+                power_table: vec![10, 11, 12],
+                commitments: keccak_hash::H256::zero(),
+            },
+            Tipset {
+                epoch: 3,
+                key: vec![13, 14, 15],
+                power_table: vec![16, 17, 18],
+                commitments: keccak_hash::H256::zero(),
+            },
+        ];
+
+        let chain = ECChain::new(base.clone(), suffix.clone()).unwrap();
+
+        assert_eq!(chain.base(), Some(&base));
+        assert_eq!(chain.suffix(), &suffix);
+        assert_eq!(chain.len(), 3); // base + 2 suffix tipsets
+    }
+    #[test]
+    fn test_ecchain_base_and_suffix() {
+        let base = create_test_tipset(1);
+        let suffix = vec![create_test_tipset(2), create_test_tipset(3)];
+        let chain = ECChain::new(base.clone(), suffix.clone()).unwrap();
+
+        assert_eq!(chain.base(), Some(&base));
+        assert_eq!(chain.suffix(), &suffix);
+    }
+    #[test]
+    fn test_ecchain_base_chain() {
+        let base = create_test_tipset(1);
+        let suffix = vec![create_test_tipset(2)];
+        let chain = ECChain::new(base.clone(), suffix).unwrap();
+
+        let base_chain = chain.base_chain().unwrap();
+        assert_eq!(base_chain.len(), 1);
+        assert_eq!(base_chain.base(), Some(&base));
+    }
+    #[test]
+    fn test_ecchain_extend() {
+        let base = create_test_tipset(1);
+        let chain = ECChain::new(base, vec![]).unwrap();
+
+        let new_tips = vec![vec![2], vec![3]];
+        let extended_chain = chain.extend(&new_tips).unwrap();
+
+        assert_eq!(extended_chain.len(), 3);
+        assert_eq!(extended_chain.last().unwrap().epoch, 3);
+    }
+    #[test]
+    fn test_ecchain_prefix() {
+        let base = create_test_tipset(1);
+        let suffix = vec![create_test_tipset(2), create_test_tipset(3)];
+        let chain = ECChain::new(base, suffix).unwrap();
+
+        let prefix = chain.prefix(1).unwrap();
+        assert_eq!(prefix.len(), 2);
+        assert_eq!(prefix.last().unwrap().epoch, 2);
+    }
+    #[test]
+    fn test_ecchain_has_suffix() {
+        let base = create_test_tipset(1);
+        let chain_with_suffix = ECChain::new(base.clone(), vec![create_test_tipset(2)]).unwrap();
+        let chain_without_suffix = ECChain::new(base, vec![]).unwrap();
+
+        assert!(chain_with_suffix.has_suffix());
+        assert!(!chain_without_suffix.has_suffix());
+    }
+
+    #[test]
+    fn test_ecchain_has_base_and_same_base() {
+        let base = create_test_tipset(1);
+        let chain1 = ECChain::new(base.clone(), vec![create_test_tipset(2)]).unwrap();
+        let chain2 = ECChain::new(base.clone(), vec![create_test_tipset(3)]).unwrap();
+        let chain3 = ECChain::new(create_test_tipset(4), vec![]).unwrap();
+
+        assert!(chain1.has_base(&base));
+        assert!(chain2.has_base(&base));
+        assert!(!chain3.has_base(&base));
+
+        assert!(chain1.same_base(&chain2));
+        assert!(!chain1.same_base(&chain3));
+    }
+
+    #[test]
+    fn test_ecchain_has_prefix() {
+        let base = create_test_tipset(1);
+        let chain = ECChain::new(
+            base.clone(),
+            vec![create_test_tipset(2), create_test_tipset(3)],
+        )
+        .unwrap();
+        let prefix = ECChain::new(base, vec![create_test_tipset(2)]).unwrap();
+        let non_prefix = ECChain::new(create_test_tipset(4), vec![]).unwrap();
+
+        assert!(chain.has_prefix(&prefix));
+        assert!(!chain.has_prefix(&non_prefix));
+    }
+
+    #[test]
+    fn test_ecchain_has_tipset() {
+        let base = create_test_tipset(1);
+        let tipset2 = create_test_tipset(2);
+        let chain = ECChain::new(base.clone(), vec![tipset2.clone()]).unwrap();
+        let non_member = create_test_tipset(3);
+
+        assert!(chain.has_tipset(&base));
+        assert!(chain.has_tipset(&tipset2));
+        assert!(!chain.has_tipset(&non_member));
+    }
+
+    #[test]
+    // This test just makes sure to fail if the implementation changes. There isn't much more that
+    // can be done, except for comparing the output of `key()` to a hardcoded value.
+    fn test_ecchain_key() {
+        let base = create_test_tipset(1);
+        let tipset2 = create_test_tipset(2);
+        let tipset3 = create_test_tipset(3);
+        let chain = ECChain::new(base, vec![tipset2, tipset3]).unwrap();
+
+        let mut expected_key = Vec::new();
+        for ts in chain.iter() {
+            expected_key.extend_from_slice(&ts.epoch.to_be_bytes());
+            expected_key.extend_from_slice(&ts.commitments.0);
+            expected_key.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
+            expected_key.extend_from_slice(&ts.key);
+            expected_key.extend_from_slice(&ts.power_table);
+        }
+
+        assert_eq!(chain.key(), expected_key);
+    }
+}
