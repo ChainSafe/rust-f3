@@ -21,10 +21,12 @@ lint-fmt:
 	cargo fmt --all --check
 	taplo fmt --check
 	taplo lint
+	corepack enable && yarn && yarn md-check
 
 fmt:
 	cargo fmt --all
 	taplo fmt
+	corepack enable && yarn && yarn md-fmt
 
 clippy:
 	cargo clippy --all-targets --quiet --no-deps -- --deny=warnings
