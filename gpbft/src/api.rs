@@ -5,6 +5,9 @@ use crate::PubKey;
 
 /// Verifier trait for signature verification in the GPBFT consensus protocol
 pub trait Verifier {
+    /// Error type. Once there is a concrete implementation of the `Verifier` trait,
+    /// this might just be a concrete error type.
+    type Error;
     /// Verifies a signature for the given public key
     ///
     /// This method must be safe for concurrent use.
@@ -16,7 +19,7 @@ pub trait Verifier {
     ///
     /// # Returns
     /// A Result indicating success or failure with an error message
-    fn verify(&self, pub_key: &PubKey, msg: &[u8], sig: &[u8]) -> Result<(), String>;
+    fn verify(&self, pub_key: &PubKey, msg: &[u8], sig: &[u8]) -> Result<(), Self::Error>;
 
     /// Aggregates signatures from participants
     ///
@@ -26,7 +29,7 @@ pub trait Verifier {
     ///
     /// # Returns
     /// A Result containing the aggregated signature
-    fn aggregate(&self, pub_keys: &[PubKey], sigs: &[Vec<u8>]) -> Result<Vec<u8>, String>;
+    fn aggregate(&self, pub_keys: &[PubKey], sigs: &[Vec<u8>]) -> Result<Vec<u8>, Self::Error>;
 
     /// Verifies an aggregate signature
     ///
@@ -44,5 +47,5 @@ pub trait Verifier {
         payload: &[u8],
         agg_sig: &[u8],
         signers: &[PubKey],
-    ) -> Result<(), String>;
+    ) -> Result<(), Self::Error>;
 }
