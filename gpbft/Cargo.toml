@@ -16,3 +16,5 @@ keccak-hash = { workspace = true }
 num-bigint = { version = "0.4.6", features = ["serde"] }
 num-traits = "0.2.19"
 strum_macros = "0.26"
+quickcheck = "1"
+derive-quickcheck-arbitrary = "0.1"

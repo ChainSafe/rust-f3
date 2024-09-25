@@ -81,7 +81,7 @@ mod tests {
     fn test_power_entry_create() {
         let id = 1;
         let power = StoragePower::from(100);
-        let pub_key = vec![1, 2, 3];
+        let pub_key = PubKey::new(vec![1, 2, 3]);
         let entry = PowerEntry {
             id,
             power: power.clone(),
@@ -98,17 +98,17 @@ mod tests {
         let entry1 = PowerEntry {
             id: 1,
             power: StoragePower::from(100),
-            pub_key: vec![1, 2, 3],
+            pub_key: PubKey::new(vec![1, 2, 3]),
         };
         let entry2 = PowerEntry {
             id: 2,
             power: StoragePower::from(200),
-            pub_key: vec![4, 5, 6],
+            pub_key: PubKey::new(vec![4, 5, 6]),
         };
         let entry3 = PowerEntry {
             id: 3,
             power: StoragePower::from(100),
-            pub_key: vec![7, 8, 9],
+            pub_key: PubKey::new(vec![7, 8, 9]),
         };
 
         // Test ordering based on power

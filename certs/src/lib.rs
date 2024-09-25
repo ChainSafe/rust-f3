@@ -162,7 +162,7 @@ pub fn apply_power_table_diffs(
                 .or_insert_with(|| PowerEntry {
                     id: d.participant_id,
                     power: StoragePower::from(0),
-                    pub_key: Vec::new(),
+                    pub_key: PubKey::default(),
                 });
 
             // Power deltas can't replace a key with the same key.
@@ -229,7 +229,7 @@ pub fn make_power_table_diff(
         let mut delta = PowerTableDelta {
             participant_id: new_entry.id,
             power_delta: StoragePower::from(0),
-            signing_key: Vec::new(),
+            signing_key: PubKey::default(),
         };
 
         let delta = match old_power_map.remove(&new_entry.id) {
@@ -256,7 +256,7 @@ pub fn make_power_table_diff(
         diff.push(PowerTableDelta {
             participant_id: old_entry.id,
             power_delta: old_entry.power.clone().neg(),
-            signing_key: Vec::new(),
+            signing_key: PubKey::default(),
         });
     }
 
@@ -275,21 +275,21 @@ mod tests {
         let zero_delta = PowerTableDelta {
             participant_id: 1,
             power_delta: StoragePower::from(0),
-            signing_key: Vec::new(),
+            signing_key: PubKey::default(),
         };
         assert!(zero_delta.is_zero());
 
         let non_zero_power_delta = PowerTableDelta {
             participant_id: 1,
             power_delta: StoragePower::from(100),
-            signing_key: Vec::new(),
+            signing_key: PubKey::default(),
         };
         assert!(!non_zero_power_delta.is_zero());
 
         let non_zero_key_delta = PowerTableDelta {
             participant_id: 1,
             power_delta: StoragePower::from(0),
-            signing_key: vec![1, 2, 3],
+            signing_key: PubKey::new(vec![1, 2, 3]),
         };
         assert!(!non_zero_key_delta.is_zero());
     }
@@ -378,24 +378,24 @@ mod tests {
             PowerEntry {
                 id: 1,
                 power: StoragePower::from(100),
-                pub_key: vec![1, 2, 3],
+                pub_key: PubKey::new(vec![1, 2, 3]),
             },
             PowerEntry {
                 id: 2,
                 power: StoragePower::from(200),
-                pub_key: vec![4, 5, 6],
+                pub_key: PubKey::new(vec![4, 5, 6]),
             },
         ];
         let new_power_table = vec![
             PowerEntry {
                 id: 1,
                 power: StoragePower::from(150),
-                pub_key: vec![1, 2, 3],
+                pub_key: PubKey::new(vec![1, 2, 3]),
             },
             PowerEntry {
                 id: 3,
                 power: StoragePower::from(300),
-                pub_key: vec![7, 8, 9],
+                pub_key: PubKey::new(vec![7, 8, 9]),
             },
         ];
 
@@ -413,7 +413,7 @@ mod tests {
         assert!(diff[1].signing_key.is_empty());
         assert_eq!(diff[2].participant_id, 3);
         assert_eq!(diff[2].power_delta, StoragePower::from(300));
-        assert_eq!(diff[2].signing_key, vec![7, 8, 9]);
+        assert_eq!(diff[2].signing_key, PubKey::new(vec![7, 8, 9]));
     }
 
     #[test]
@@ -422,12 +422,12 @@ mod tests {
             PowerEntry {
                 id: 1,
                 power: StoragePower::from(100),
-                pub_key: vec![1, 2, 3],
+                pub_key: PubKey::new(vec![1, 2, 3]),
             },
             PowerEntry {
                 id: 2,
                 power: StoragePower::from(200),
-                pub_key: vec![4, 5, 6],
+                pub_key: PubKey::new(vec![4, 5, 6]),
             },
         ];
 
@@ -436,18 +436,18 @@ mod tests {
                 PowerTableDelta {
                     participant_id: 1,
                     power_delta: StoragePower::from(50),
-                    signing_key: vec![],
+                    signing_key: PubKey::default(),
                 },
                 PowerTableDelta {
                     participant_id: 3,
                     power_delta: StoragePower::from(300),
-                    signing_key: vec![7, 8, 9],
+                    signing_key: PubKey::new(vec![7, 8, 9]),
                 },
             ],
             vec![PowerTableDelta {
                 participant_id: 2,
                 power_delta: StoragePower::from(-200),
-                signing_key: vec![],
+                signing_key: PubKey::default(),
             }],
         ];
 
@@ -456,9 +456,9 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].id, 3);
         assert_eq!(result[0].power, StoragePower::from(300));
-        assert_eq!(result[0].pub_key, vec![7, 8, 9]);
+        assert_eq!(result[0].pub_key, PubKey::new(vec![7, 8, 9]));
         assert_eq!(result[1].id, 1);
         assert_eq!(result[1].power, StoragePower::from(150));
-        assert_eq!(result[1].pub_key, vec![1, 2, 3]);
+        assert_eq!(result[1].pub_key, PubKey::new(vec![1, 2, 3]));
     }
 }
