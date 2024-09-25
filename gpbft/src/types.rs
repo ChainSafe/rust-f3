@@ -1,6 +1,5 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
-use derive_quickcheck_arbitrary::Arbitrary;
 
 /// `ActorId` represents the unique identifier for an actor in the Filecoin network.
 pub type ActorId = u64;
