@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["blssig", "gpbft"]
+members = ["blssig", "certs", "gpbft"]
 
 [workspace.package]
 authors = ["ChainSafe Systems <forest@chainsafe.io>"]
@@ -9,3 +9,5 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [workspace.dependencies]
+ahash = "0.8.11"
+keccak-hash = "0.11.0"

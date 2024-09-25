@@ -25,3 +25,10 @@ tipset/SM
 tipsetkey/S
 validator/S
 verifier
+GPBFT
+ECChain
+mainnet
+calibnet
+Filecoin
+merkle
+Keccak256
