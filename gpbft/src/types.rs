@@ -6,8 +6,9 @@ use derive_quickcheck_arbitrary::Arbitrary;
 pub type ActorId = u64;
 /// `StoragePower` represents the amount of storage power an actor has in the network.
 pub type StoragePower = num_bigint::BigInt;
+
 /// `PubKey` represents a public key used for cryptographic operations in the network.
-#[derive(Debug, PartialEq, Eq, Clone, Default, Arbitrary)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct PubKey(Vec<u8>);
 
 impl PubKey {
