@@ -275,7 +275,8 @@ impl Display for ECChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{create_powertable, create_test_tipset};
+    use crate::test_utils::{create_test_tipset, powertable_cid};
+    use cid::Version;
 
     #[test]
     fn test_tipset_create_and_validate() -> anyhow::Result<()> {
@@ -469,5 +470,19 @@ mod tests {
         }
 
         assert_eq!(chain.key(), expected_key);
+    }
+
+    #[test]
+    fn test_cid_from_bytes() {
+        let bytes = vec![1, 2, 3, 4, 5];
+        let cid = cid_from_bytes(&bytes);
+
+        // Check that the CID has the expected properties
+        assert_eq!(cid.version(), Version::V1);
+        assert_eq!(cid.codec(), DAG_CBOR);
+
+        // Verify that the CID's hash matches the input bytes, thus verifying the algorithm
+        let expected_hash = Blake2b256.digest(&bytes);
+        assert_eq!(cid.hash().digest(), expected_hash.digest());
     }
 }
