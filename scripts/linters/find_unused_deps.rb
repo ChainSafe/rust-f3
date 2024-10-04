@@ -16,6 +16,8 @@ def excluded?(crates, crate)
   if crate == 'quickcheck' && crates.include?('quickcheck_macros')
       return true
   end
+  # we are using a trick to enable a `test-utils` feature in the `f3-gpbft` which
+  # triggers a false positive.
   crate == 'filecoin-f3-gpbft'
 end
 
