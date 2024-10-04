@@ -13,7 +13,10 @@ end
 # Special cases to suppress false positives.
 def excluded?(crates, crate)
   # `quickcheck` is required implicitly by `quickcheck_macros`
-  crate == 'quickcheck' && crates.include?('quickcheck_macros')
+  if crate == 'quickcheck' && crates.include?('quickcheck_macros')
+      return true
+  end
+  crate == 'filecoin-f3-gpbft'
 end
 
 Dir.glob('**/*.toml').each do |file|
