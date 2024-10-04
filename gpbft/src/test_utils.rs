@@ -13,12 +13,11 @@ pub fn create_test_tipset(epoch: i64) -> Tipset {
 }
 
 pub fn create_powertable() -> PowerEntries {
-    let power_table = PowerEntries(vec![PowerEntry {
+    PowerEntries(vec![PowerEntry {
         id: 0,
         power: 1.into(),
         pub_key: PubKey::new(vec![1; 32]),
-    }]);
-    power_table
+    }])
 }
 
 pub fn powertable_cid() -> anyhow::Result<Cid> {

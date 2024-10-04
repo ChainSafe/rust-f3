@@ -170,12 +170,12 @@ impl ECChain {
     pub fn extend(&self, tips: &[TipsetKey]) -> Option<ECChain> {
         let mut new_chain = self.clone();
         let mut offset = self.last()?.epoch + 1;
-        let pt = self.last()?.power_table.clone();
+        let pt = self.last()?.power_table;
         for tip in tips {
             new_chain.push(Tipset {
                 epoch: offset,
                 key: tip.clone(),
-                power_table: pt.clone(),
+                power_table: pt,
                 commitments: keccak_hash::H256::zero(),
             });
             offset += 1;
