@@ -37,8 +37,11 @@ pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
 use strum_macros::Display;
 
-pub use crate::chain::{Cid, ECChain};
+pub use crate::chain::{cid_from_bytes, Cid, ECChain};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
+
+#[cfg(feature = "test-utils")]
+pub mod test_utils;
 
 /// Additional data signed by participants in a GPBFT instance
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -141,7 +144,7 @@ mod tests {
         let step = Phase::Commit;
         let supplemental_data = SupplementalData {
             commitments: keccak_hash::H256::zero(),
-            power_table: vec![],
+            power_table: Cid::default(),
         };
         let value = ECChain(Vec::new());
 

@@ -268,7 +268,32 @@ pub fn make_power_table_diff(
 mod tests {
     use super::*;
     use filecoin_f3_gpbft::chain::Tipset;
+    use filecoin_f3_gpbft::test_utils::powertable_cid;
     use filecoin_f3_gpbft::Payload;
+
+    fn create_mock_justification(step: Phase) -> anyhow::Result<Justification> {
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+        let j = Justification {
+            vote: Payload {
+                instance: 1,
+                round: 0,
+                step,
+                supplemental_data: SupplementalData {
+                    commitments: keccak_hash::H256::zero(),
+                    power_table: powertable_cid()?,
+                },
+                value: ECChain::new(base_tipset, vec![]).unwrap(),
+            },
+            signers: BitField::new(),
+            signature: vec![7, 8, 9],
+        };
+        Ok(j)
+    }
 
     #[test]
     fn test_power_table_delta_is_zero() {
@@ -294,33 +319,10 @@ mod tests {
         assert!(!non_zero_key_delta.is_zero());
     }
 
-    fn create_mock_justification(step: Phase) -> Justification {
-        let base_tipset = Tipset {
-            epoch: 1,
-            key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
-            commitments: keccak_hash::H256::zero(),
-        };
-        Justification {
-            vote: Payload {
-                instance: 1,
-                round: 0,
-                step,
-                supplemental_data: SupplementalData {
-                    commitments: keccak_hash::H256::zero(),
-                    power_table: vec![],
-                },
-                value: ECChain::new(base_tipset, vec![]).unwrap(),
-            },
-            signers: BitField::new(),
-            signature: vec![7, 8, 9],
-        }
-    }
-
     #[test]
-    fn test_finality_certificate_new_success() {
+    fn test_finality_certificate_new_success() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let justification = create_mock_justification(Phase::Decide);
+        let justification = create_mock_justification(Phase::Decide)?;
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_ok());
@@ -331,24 +333,26 @@ mod tests {
         assert_eq!(cert.supplemental_data, justification.vote.supplemental_data);
         assert_eq!(cert.signers, justification.signers);
         assert_eq!(cert.signature, justification.signature);
+        Ok(())
     }
 
     #[test]
-    fn test_finality_certificate_new_wrong_phase() {
+    fn test_finality_certificate_new_wrong_phase() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
         let justification = create_mock_justification(Phase::Commit);
 
-        let result = FinalityCertificate::new(power_delta, &justification);
+        let result = FinalityCertificate::new(power_delta, &justification?);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
             .contains("can only create a finality certificate from a decide vote"));
+        Ok(())
     }
 
     #[test]
-    fn test_finality_certificate_new_wrong_round() {
+    fn test_finality_certificate_new_wrong_round() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let mut justification = create_mock_justification(Phase::Decide);
+        let mut justification = create_mock_justification(Phase::Decide)?;
         justification.vote.round = 1;
 
         let result = FinalityCertificate::new(power_delta, &justification);
@@ -356,13 +360,14 @@ mod tests {
         assert!(result
             .unwrap_err()
             .contains("expected decide round to be 0"));
+        Ok(())
     }
 
     // It makes no sense that ECChain can be empty. Perhaps this warrants a discussion.
     #[test]
-    fn test_finality_certificate_new_empty_value() {
+    fn test_finality_certificate_new_empty_value() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let mut justification = create_mock_justification(Phase::Decide);
+        let mut justification = create_mock_justification(Phase::Decide)?;
         justification.vote.value = ECChain(Vec::new());
 
         let result = FinalityCertificate::new(power_delta, &justification);
@@ -370,6 +375,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .contains("got a decision for bottom for instance"));
+        Ok(())
     }
 
     #[test]

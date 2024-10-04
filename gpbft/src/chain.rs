@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use anyhow::anyhow;
+use cid::multihash::Code::Blake2b256;
+use cid::multihash::MultihashDigest;
+pub use cid::Cid;
+use fvm_ipld_encoding::DAG_CBOR;
 use std::fmt::Display;
 use std::{cmp, fmt};
 
@@ -17,8 +21,6 @@ pub const CID_MAX_LEN: usize = 38;
 pub const TIPSET_KEY_MAX_LEN: usize = 20 * CID_MAX_LEN;
 
 pub type TipsetKey = Vec<u8>;
-
-pub type Cid = Vec<u8>;
 
 /// A map key for a chain. The zero value means "bottom".
 /// Note that in reference Go implementation this is a string, but we use
@@ -53,10 +55,10 @@ impl Tipset {
         if self.key.len() > TIPSET_KEY_MAX_LEN {
             return Err("tipset key too long".to_string());
         }
-        if self.power_table.is_empty() {
+        if self.power_table == Cid::default() {
             return Err("power table CID must not be empty".to_string());
         }
-        if self.power_table.len() > CID_MAX_LEN {
+        if self.power_table.encoded_len() > CID_MAX_LEN {
             return Err("power table CID too long".to_string());
         }
         Ok(())
@@ -229,7 +231,7 @@ impl ECChain {
     pub fn key(&self) -> ChainKey {
         let mut capacity = self.len() * (8 + 32 + 4); // epoch + commitment + ts length
         for ts in self.iter() {
-            capacity += ts.key.len() + ts.power_table.len();
+            capacity += ts.key.len() + ts.power_table.encoded_len();
         }
         let mut buf = Vec::with_capacity(capacity);
         for ts in self.iter() {
@@ -237,10 +239,16 @@ impl ECChain {
             buf.extend_from_slice(&ts.commitments.0);
             buf.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
             buf.extend_from_slice(&ts.key);
-            buf.extend_from_slice(&ts.power_table);
+            buf.extend_from_slice(&ts.power_table.to_bytes());
         }
         buf
     }
+}
+
+/// Hashes the given data and returns a `DAG_CBOR + blake2b-256 CID`.
+pub fn cid_from_bytes(bytes: &[u8]) -> Cid {
+    let hash = Blake2b256.digest(bytes);
+    Cid::new_v1(DAG_CBOR, hash)
 }
 
 impl Display for ECChain {
@@ -267,31 +275,24 @@ impl Display for ECChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn create_test_tipset(epoch: i64) -> Tipset {
-        Tipset {
-            epoch,
-            key: vec![1; TIPSET_KEY_MAX_LEN / 2],
-            power_table: vec![1; CID_MAX_LEN / 2],
-            commitments: keccak_hash::H256::zero(),
-        }
-    }
+    use crate::test_utils::{create_powertable, create_test_tipset};
 
     #[test]
-    fn test_tipset_create_and_validate() {
+    fn test_tipset_create_and_validate() -> anyhow::Result<()> {
         let tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
         assert_eq!(tipset.epoch, 1);
         assert_eq!(tipset.key, vec![1, 2, 3]);
-        assert_eq!(tipset.power_table, vec![4, 5, 6]);
+        assert_eq!(tipset.power_table, powertable_cid()?);
         assert_eq!(tipset.commitments, keccak_hash::H256::zero());
 
         assert!(tipset.validate().is_ok());
+        Ok(())
     }
 
     #[test]
@@ -299,7 +300,7 @@ mod tests {
         let empty_tipset = Tipset {
             epoch: 0,
             key: vec![],
-            power_table: vec![],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -308,7 +309,7 @@ mod tests {
         let non_empty_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -320,7 +321,7 @@ mod tests {
         let tipset = Tipset {
             epoch: 10,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -333,20 +334,20 @@ mod tests {
         let base = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
         let suffix = vec![
             Tipset {
                 epoch: 2,
                 key: vec![7, 8, 9],
-                power_table: vec![10, 11, 12],
+                power_table: Cid::default(),
                 commitments: keccak_hash::H256::zero(),
             },
             Tipset {
                 epoch: 3,
                 key: vec![13, 14, 15],
-                power_table: vec![16, 17, 18],
+                power_table: Cid::default(),
                 commitments: keccak_hash::H256::zero(),
             },
         ];
@@ -464,7 +465,7 @@ mod tests {
             expected_key.extend_from_slice(&ts.commitments.0);
             expected_key.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
             expected_key.extend_from_slice(&ts.key);
-            expected_key.extend_from_slice(&ts.power_table);
+            expected_key.extend_from_slice(&ts.power_table.to_bytes());
         }
 
         assert_eq!(chain.key(), expected_key);

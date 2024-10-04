@@ -3,6 +3,7 @@
 
 use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
+use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
 /// Represents a participant's power and public key in the network
@@ -37,7 +38,34 @@ impl Ord for PowerEntry {
     }
 }
 
+impl Serialize for PowerEntry {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if !self.pub_key.is_valid() {
+            return Err(serde::ser::Error::custom(
+                "Byte array in field pub_key is too long",
+            ));
+        }
+
+        (&self.id, &self.power, &self.pub_key).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for PowerEntry {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let (id, power, pub_key) = Deserialize::deserialize(deserializer)?;
+        Ok(Self { id, power, pub_key })
+    }
+}
+
 /// A collection of `PowerEntry` instances representing the power distribution in the network
+#[derive(Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct PowerEntries(pub Vec<PowerEntry>);
 
 impl Deref for PowerEntries {
