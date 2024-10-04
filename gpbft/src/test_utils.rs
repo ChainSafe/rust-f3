@@ -6,7 +6,8 @@ pub fn create_test_tipset(epoch: i64) -> Tipset {
     Tipset {
         epoch,
         key: vec![1; TIPSET_KEY_MAX_LEN / 2],
-        power_table: Cid::default(),
+        // Unwrap is fine here as `powertable_cid` should never fail.
+        power_table: powertable_cid().unwrap(),
         commitments: keccak_hash::H256::zero(),
     }
 }

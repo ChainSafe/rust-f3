@@ -283,7 +283,7 @@ mod tests {
         let tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: Cid::default(),
+            power_table: powertable_cid()?,
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -331,24 +331,24 @@ mod tests {
     }
 
     #[test]
-    fn test_ecchain_new() {
+    fn test_ecchain_new() -> anyhow::Result<()> {
         let base = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: Cid::default(),
+            power_table: powertable_cid()?,
             commitments: keccak_hash::H256::zero(),
         };
         let suffix = vec![
             Tipset {
                 epoch: 2,
                 key: vec![7, 8, 9],
-                power_table: Cid::default(),
+                power_table: powertable_cid()?,
                 commitments: keccak_hash::H256::zero(),
             },
             Tipset {
                 epoch: 3,
                 key: vec![13, 14, 15],
-                power_table: Cid::default(),
+                power_table: powertable_cid()?,
                 commitments: keccak_hash::H256::zero(),
             },
         ];
@@ -358,6 +358,7 @@ mod tests {
         assert_eq!(chain.base(), Some(&base));
         assert_eq!(chain.suffix(), &suffix);
         assert_eq!(chain.len(), 3); // base + 2 suffix tipsets
+        Ok(())
     }
     #[test]
     fn test_ecchain_base_and_suffix() {
