@@ -67,6 +67,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Apt Dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            sudo apt-get install -y clang
       - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
         env:
           RUSTC_WRAPPER:
