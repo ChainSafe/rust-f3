@@ -67,16 +67,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Apt Dependencies
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 5
-          max_attempts: 3
-          command: |
-            sudo apt-get install -y build-essential libclang-dev clang clang-tools
-            echo $PATH
-            which clang
-            sccache clang
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+        timeout-minutes: 5
+        continue-on-error: true
       - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
         env:
           RUSTC_WRAPPER:
