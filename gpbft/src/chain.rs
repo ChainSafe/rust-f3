@@ -125,7 +125,8 @@ impl ECChain {
         chain.validate()?;
         Ok(chain)
     }
-
+    /// Creates a new ECChain without validation to allow for creation of empty ECChain or ECChain
+    /// from a suffix.
     pub fn new_unvalidated(tipsets: Vec<Tipset>) -> Self {
         ECChain(tipsets)
     }
