@@ -1,5 +1,5 @@
 use thiserror::Error;
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum GPBFTError {
     #[error("chain too long: {len} > {max_len}")]
     ChainTooLong { max_len: usize, len: usize },

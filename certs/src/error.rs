@@ -1,7 +1,7 @@
 use filecoin_f3_gpbft::{ActorId, CborError, Cid, GPBFTError};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum CertsError {
     #[error("empty chain")]
     EmptyChain,

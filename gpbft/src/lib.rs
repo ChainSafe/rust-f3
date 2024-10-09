@@ -152,7 +152,7 @@ mod tests {
             commitments: keccak_hash::H256::zero(),
             power_table: Cid::default(),
         };
-        let value = ECChain(Vec::new());
+        let value = ECChain::new_unvalidated(vec![]);
 
         let payload = Payload::new(
             instance,

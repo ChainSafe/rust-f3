@@ -438,9 +438,10 @@ mod tests {
 
         let result = FinalityCertificate::new(power_delta, &justification?);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("can only create a finality certificate from a decide vote"));
+        assert_eq!(
+            result.unwrap_err(),
+            CertsError::InvalidJustification(Phase::Commit.to_string())
+        );
         Ok(())
     }
 
@@ -452,9 +453,7 @@ mod tests {
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("expected decide round to be 0"));
+        assert_eq!(result.unwrap_err(), CertsError::InvalidRound(1));
         Ok(())
     }
 
@@ -463,13 +462,11 @@ mod tests {
     fn test_finality_certificate_new_empty_value() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
         let mut justification = create_mock_justification(Phase::Decide)?;
-        justification.vote.value = ECChain(Vec::new());
+        justification.vote.value = ECChain::new_unvalidated(Vec::new());
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("got a decision for bottom for instance"));
+        assert_eq!(result.unwrap_err(), CertsError::BottomDecision(1));
         Ok(())
     }
 
@@ -531,26 +528,26 @@ mod tests {
                 pub_key: PubKey::new(vec![4, 5, 6]),
             },
         ];
-
-        let diffs = vec![
-            vec![
-                PowerTableDelta {
-                    participant_id: 1,
-                    power_delta: StoragePower::from(50),
-                    signing_key: PubKey::default(),
-                },
-                PowerTableDelta {
-                    participant_id: 3,
-                    power_delta: StoragePower::from(300),
-                    signing_key: PubKey::new(vec![7, 8, 9]),
-                },
-            ],
-            vec![PowerTableDelta {
-                participant_id: 2,
-                power_delta: StoragePower::from(-200),
+        let diff_one = vec![
+            PowerTableDelta {
+                participant_id: 1,
+                power_delta: StoragePower::from(50),
                 signing_key: PubKey::default(),
-            }],
+            },
+            PowerTableDelta {
+                participant_id: 3,
+                power_delta: StoragePower::from(300),
+                signing_key: PubKey::new(vec![7, 8, 9]),
+            },
         ];
+
+        let diff_two = vec![PowerTableDelta {
+            participant_id: 2,
+            power_delta: StoragePower::from(-200),
+            signing_key: PubKey::default(),
+        }];
+
+        let diffs = vec![&diff_one, &diff_two];
 
         let result = apply_power_table_diffs(&PowerEntries(prev_power_table), &diffs).unwrap();
 
