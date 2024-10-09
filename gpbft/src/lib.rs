@@ -33,6 +33,7 @@ pub use powertable::{PowerEntries, PowerEntry, PowerTable};
 
 // re-exports
 pub use fvm_ipld_bitfield::BitField;
+pub use fvm_ipld_encoding::{to_vec as to_vec_cbor, Error as CborError};
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
 use strum_macros::Display;
@@ -40,8 +41,13 @@ use strum_macros::Display;
 pub use crate::chain::{cid_from_bytes, Cid, ECChain};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
 
+mod error;
 #[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+pub use error::GPBFTError;
+
+type Result<T> = std::result::Result<T, GPBFTError>;
 
 /// Additional data signed by participants in a GPBFT instance
 #[derive(Debug, PartialEq, Eq, Clone)]

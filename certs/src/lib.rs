@@ -1,6 +1,10 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+mod error;
+
+use crate::error::CertsError;
+use crate::error::CertsError::UnsortedDiff;
 /// The `certs` package provides functionality for handling finality certificates in the GPBFT consensus protocol.
 ///
 /// This package includes:
@@ -21,11 +25,15 @@
 /// Note: The signature verification only checks that the certificate's value has been signed by a majority
 /// of the power. It does not validate the power delta or other parts of the certificate.
 use ahash::HashMap;
+use filecoin_f3_gpbft::api::Verifier;
+use filecoin_f3_gpbft::chain::Tipset;
 use filecoin_f3_gpbft::{
-    ActorId, BitField, ECChain, Justification, Phase, PowerEntries, PowerEntry, PubKey, Sign,
-    StoragePower, SupplementalData, Zero,
+    cid_from_bytes, to_vec_cbor, ActorId, BitField, ECChain, Justification, NetworkName, Phase,
+    PowerEntries, PowerEntry, PubKey, Sign, StoragePower, SupplementalData, Zero,
 };
 use std::ops::Neg;
+
+type Result<T> = std::result::Result<T, error::CertsError>;
 
 /// `PowerTableDelta` represents a single power table change between GPBFT instances. If the resulting
 /// power is 0 after applying the delta, the participant is removed from the power table.
@@ -85,26 +93,19 @@ impl FinalityCertificate {
     ///
     /// # Returns
     /// A Result containing the new `FinalityCertificate` if successful
-    pub fn new(power_delta: PowerTableDiff, justification: &Justification) -> Result<Self, String> {
+    pub fn new(power_delta: PowerTableDiff, justification: &Justification) -> Result<Self> {
         if justification.vote.step != Phase::Decide {
-            return Err(format!(
-                "can only create a finality certificate from a decide vote, got phase {:?}",
-                justification.vote.step
+            return Err(CertsError::InvalidJustification(
+                justification.vote.step.to_string(),
             ));
         }
 
         if justification.vote.round != 0 {
-            return Err(format!(
-                "expected decide round to be 0, got round {}",
-                justification.vote.round
-            ));
+            return Err(CertsError::InvalidRound(justification.vote.round));
         }
 
         if justification.vote.value.is_empty() {
-            return Err(format!(
-                "got a decision for bottom for instance {}",
-                justification.vote.instance
-            ));
+            return Err(CertsError::BottomDecision(justification.vote.instance));
         }
 
         Ok(FinalityCertificate {
@@ -124,8 +125,8 @@ impl FinalityCertificate {
 /// - The returned power table is sorted by power, descending.
 pub fn apply_power_table_diffs(
     prev_power_table: &PowerEntries,
-    diffs: &[PowerTableDiff],
-) -> Result<PowerEntries, String> {
+    diffs: &[&PowerTableDiff],
+) -> Result<PowerEntries> {
     let mut power_table_map: HashMap<ActorId, PowerEntry> = prev_power_table
         .iter()
         .map(|pe| (pe.id, pe.clone()))
@@ -137,15 +138,12 @@ pub fn apply_power_table_diffs(
             // We assert this to make sure the finality certificate has a consistent power-table
             // diff.
             if i > 0 && d.participant_id <= last_actor_id {
-                return Err(format!("diff {} not sorted by participant ID", j));
+                return Err(UnsortedDiff(j));
             }
 
             // Empty power diffs aren't allowed.
             if d.is_zero() {
-                return Err(format!(
-                    "diff {} contains an empty delta for participant {}",
-                    j, d.participant_id
-                ));
+                return Err(CertsError::EmptyDelta(j, d.participant_id));
             }
 
             last_actor_id = d.participant_id;
@@ -153,7 +151,10 @@ pub fn apply_power_table_diffs(
             if !power_table_map.contains_key(&d.participant_id) {
                 // New power entries must specify positive power.
                 if d.power_delta <= StoragePower::from(0) {
-                    return Err(format!("diff {} includes a new entry with a non-positive power delta for participant {}", j, d.participant_id));
+                    return Err(CertsError::NonPositivePowerDeltaForNewEntry(
+                        j,
+                        d.participant_id,
+                    ));
                 }
             }
 
@@ -169,10 +170,7 @@ pub fn apply_power_table_diffs(
             // This also implicitly checks the key for emptiness on a new entry, because that is the
             // default.
             if pe.pub_key == d.signing_key {
-                return Err(format!(
-                    "diff {} delta for participant {} includes an unchanged key",
-                    j, pe.id
-                ));
+                return Err(CertsError::UnchangedKey(j, pe.id));
             }
 
             if !d.power_delta.is_zero() {
@@ -183,21 +181,13 @@ pub fn apply_power_table_diffs(
                 // If we end up with no power, we shouldn't replace the key.
                 // This condition will never be true for a new entry.
                 if pe.power.is_zero() {
-                    return Err(format!(
-                        "diff {} removes all power for participant {} while specifying a new key",
-                        j, pe.id
-                    ));
+                    return Err(CertsError::RemovesAllPowerWithNewKey(j, pe.id));
                 }
                 pe.pub_key = d.signing_key.clone();
             }
 
             match pe.power.sign() {
-                Sign::Minus => {
-                    return Err(format!(
-                        "diff {} resulted in negative power for participant {}",
-                        j, pe.id
-                    ))
-                }
+                Sign::Minus => return Err(CertsError::NegativePower(j, pe.id)),
                 Sign::NoSign => {
                     power_table_map.remove(&d.participant_id);
                 }
@@ -262,6 +252,111 @@ pub fn make_power_table_diff(
 
     diff.sort_by_key(|delta| delta.participant_id);
     diff
+}
+
+/// Validates a sequence of finality certificates.
+///
+/// This function checks the validity of a series of finality certificates, ensuring they form a
+/// consistent chain and that the power table changes are correctly applied and verified.
+///
+/// # Arguments
+/// * `verifier` - The signature verifier implementation
+/// * `network` - The network name
+/// * `prev_power_table` - The initial power table
+/// * `next_instance` - The expected next instance number
+/// * `base` - The optional base tipset
+/// * `certs` - The sequence of finality certificates to validate
+///
+/// # Returns
+/// A Result containing a tuple of:
+/// * The next instance number
+/// * The validated ECChain
+/// * The final power table after applying all changes
+///
+/// # Errors
+/// Returns a `CertsError` if any validation step fails, including instance mismatches,
+/// invalid certificates, power table inconsistencies, or serialization errors.
+///
+/// # Note: verifier and network are currently unused, but are expected to be used once the crypto
+/// library has been ported.
+#[allow(unused)]
+pub fn validate_finality_certificates<'a>(
+    verifier: impl Verifier,
+    network: &NetworkName,
+    prev_power_table: PowerEntries,
+    mut next_instance: u64,
+    mut base: Option<&'a Tipset>,
+    certs: &'a [FinalityCertificate],
+) -> Result<(u64, ECChain, PowerEntries)> {
+    let mut chain: Option<ECChain> = None;
+    let mut current_power_table = prev_power_table;
+
+    for cert in certs {
+        if cert.gpbft_instance != next_instance {
+            return Err(CertsError::InstanceMismatch {
+                expected: next_instance,
+                found: cert.gpbft_instance,
+            });
+        }
+
+        // Basic sanity checks
+        if let Err(e) = cert.ec_chain.validate() {
+            return Err(CertsError::InvalidFinalityCertificate(
+                cert.gpbft_instance,
+                e,
+            ));
+        }
+
+        if cert.ec_chain.is_empty() {
+            return Err(CertsError::EmptyFinalityCertificate(cert.gpbft_instance));
+        }
+
+        // Validate base tipset if specified
+        if base.is_some() {
+            if base != cert.ec_chain.base() {
+                return Err(CertsError::BaseTipsetMismatch(cert.gpbft_instance));
+            }
+        }
+
+        // Compute new power table and validate
+        let new_power_table =
+            apply_power_table_diffs(&current_power_table, &[&cert.power_table_delta])?;
+
+        let bytes = to_vec_cbor(&new_power_table)?;
+        let power_table_cid = cid_from_bytes(&bytes);
+
+        if cert.supplemental_data.power_table != power_table_cid {
+            return Err(CertsError::IncorrectPowerDiff {
+                instance: cert.gpbft_instance,
+                expected: cert.supplemental_data.power_table,
+                got: power_table_cid,
+            });
+        }
+
+        next_instance += 1;
+        if cert.ec_chain.has_suffix() {
+            chain = match chain {
+                Some(existing) => existing.extend(
+                    &cert
+                        .ec_chain
+                        .suffix()
+                        .iter()
+                        .map(|ts| ts.key.clone())
+                        .collect::<Vec<_>>(),
+                ),
+                None => Some(ECChain::new_unvalidated(cert.ec_chain.suffix().to_vec())),
+            };
+        }
+
+        current_power_table = new_power_table;
+        base = cert.ec_chain.head();
+    }
+
+    Ok((
+        next_instance,
+        chain.ok_or(CertsError::EmptyChain)?,
+        current_power_table,
+    ))
 }
 
 #[cfg(test)]

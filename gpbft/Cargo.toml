@@ -19,6 +19,7 @@ num-bigint = { version = "0.4.6", features = ["serde"] }
 num-traits = "0.2.19"
 serde = "1.0"
 strum_macros = "0.26"
+thiserror = { workspace = true }
 
 [dev-dependencies]
 filecoin-f3-gpbft = { features = ["test-utils"], path = "../gpbft" }

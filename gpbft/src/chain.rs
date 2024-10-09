@@ -1,7 +1,7 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use anyhow::anyhow;
+use crate::GPBFTError;
 use cid::multihash::Code::Blake2b256;
 use cid::multihash::MultihashDigest;
 pub use cid::Cid;
@@ -48,18 +48,24 @@ impl Tipset {
     ///
     /// # Returns
     /// A Result indicating success or failure with an error message
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> crate::Result<()> {
         if self.key.is_empty() {
-            return Err("tipset key must not be empty".to_string());
+            return Err(GPBFTError::TipsetKeyEmpty);
         }
         if self.key.len() > TIPSET_KEY_MAX_LEN {
-            return Err("tipset key too long".to_string());
+            return Err(GPBFTError::TipsetKeyTooLong {
+                len: self.key.len(),
+                max_len: TIPSET_KEY_MAX_LEN,
+            });
         }
         if self.power_table == Cid::default() {
-            return Err("power table CID must not be empty".to_string());
+            return Err(GPBFTError::PowerTableCidEmpty);
         }
         if self.power_table.encoded_len() > CID_MAX_LEN {
-            return Err("power table CID too long".to_string());
+            return Err(GPBFTError::PowerTableCidTooLong {
+                len: self.power_table.encoded_len(),
+                max_len: CID_MAX_LEN,
+            });
         }
         Ok(())
     }
@@ -87,7 +93,7 @@ impl fmt::Display for Tipset {
 /// The zero value (empty chain) is not valid and represents a "bottom" value
 /// when used in a GPBFT message.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ECChain(pub Vec<Tipset>);
+pub struct ECChain(Vec<Tipset>);
 
 impl std::ops::Deref for ECChain {
     type Target = Vec<Tipset>;
@@ -112,7 +118,7 @@ impl ECChain {
     /// A Result containing the new ECChain
     ///
     /// Note: To conform to the reference implementation we should allow empty ECChain.
-    pub fn new(base: Tipset, suffix: Vec<Tipset>) -> Result<Self, String> {
+    pub fn new(base: Tipset, suffix: Vec<Tipset>) -> crate::Result<Self> {
         let mut tipsets = vec![base];
         tipsets.extend(suffix);
         let chain = ECChain(tipsets);
@@ -120,22 +126,29 @@ impl ECChain {
         Ok(chain)
     }
 
+    pub fn new_unvalidated(tipsets: Vec<Tipset>) -> Self {
+        ECChain(tipsets)
+    }
+
     /// Validates the chain
-    pub fn validate(&self) -> anyhow::Result<(), String> {
+    pub fn validate(&self) -> crate::Result<()> {
         if self.is_empty() {
             return Ok(());
         }
         if self.len() > CHAIN_MAX_LEN {
-            return Err("chain too long".to_string());
+            return Err(GPBFTError::ChainTooLong {
+                len: self.len(),
+                max_len: CHAIN_MAX_LEN,
+            });
         }
         let mut last_epoch: i64 = -1;
-        for (i, ts) in self.iter().enumerate() {
-            ts.validate().map_err(|e| format!("tipset {}: {}", i, e))?;
+        for (_, ts) in self.iter().enumerate() {
+            ts.validate()?;
             if ts.epoch <= last_epoch {
-                return Err(format!(
-                    "chain must have increasing epochs {} <= {}",
-                    ts.epoch, last_epoch
-                ));
+                return Err(GPBFTError::Epochs {
+                    current: ts.epoch,
+                    last: last_epoch,
+                });
             }
             last_epoch = ts.epoch;
         }
@@ -150,6 +163,10 @@ impl ECChain {
     /// Returns the base tipset of the chain
     pub fn base(&self) -> Option<&Tipset> {
         self.first()
+    }
+
+    pub fn head(&self) -> Option<&Tipset> {
+        self.last()
     }
 
     /// Returns the suffix of the chain after the base
@@ -184,9 +201,9 @@ impl ECChain {
     }
 
     /// Returns a chain with suffix truncated to a maximum length
-    pub fn prefix(&self, to: usize) -> anyhow::Result<ECChain> {
+    pub fn prefix(&self, to: usize) -> crate::Result<ECChain> {
         if self.is_empty() {
-            return Err(anyhow!("can't get prefix from zero-valued chain"));
+            return Err(GPBFTError::ChainEmpty);
         }
         let length = cmp::min(to + 1, self.len());
         Ok(ECChain(self[..length].to_vec()))
