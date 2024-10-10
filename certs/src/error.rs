@@ -57,8 +57,8 @@ pub enum CertsError {
     #[error("incorrect power diff from finality certificate for instance {instance}: expected {expected:?}, got {got:?}")]
     IncorrectPowerDiff {
         instance: u64,
-        expected: Cid,
-        got: Cid,
+        expected: String,
+        got: String,
     },
 
     #[error("cbor encoding error")]

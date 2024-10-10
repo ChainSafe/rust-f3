@@ -312,10 +312,8 @@ pub fn validate_finality_certificates<'a>(
         }
 
         // Validate base tipset if specified
-        if base.is_some() {
-            if base != cert.ec_chain.base() {
-                return Err(CertsError::BaseTipsetMismatch(cert.gpbft_instance));
-            }
+        if base.is_some() && base != cert.ec_chain.base() {
+            return Err(CertsError::BaseTipsetMismatch(cert.gpbft_instance));
         }
 
         // Compute new power table and validate
@@ -328,8 +326,8 @@ pub fn validate_finality_certificates<'a>(
         if cert.supplemental_data.power_table != power_table_cid {
             return Err(CertsError::IncorrectPowerDiff {
                 instance: cert.gpbft_instance,
-                expected: cert.supplemental_data.power_table,
-                got: power_table_cid,
+                expected: cert.supplemental_data.power_table.to_string(),
+                got: power_table_cid.to_string(),
             });
         }
 
