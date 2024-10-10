@@ -362,15 +362,26 @@ mod tests {
     use super::*;
     use filecoin_f3_gpbft::chain::Tipset;
     use filecoin_f3_gpbft::test_utils::powertable_cid;
-    use filecoin_f3_gpbft::Payload;
+    use filecoin_f3_gpbft::{Cid, Payload};
+    use std::str::FromStr;
 
-    fn create_mock_justification(step: Phase) -> anyhow::Result<Justification> {
+    fn create_mock_justification(step: Phase, cid: &str) -> anyhow::Result<Justification> {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
             power_table: powertable_cid()?,
             commitments: keccak_hash::H256::zero(),
         };
+
+        let additional_tipset = Tipset {
+            epoch: 2,
+            key: vec![4, 5, 6],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let ec_chain = ECChain::new(base_tipset, vec![additional_tipset]).unwrap();
+
         let j = Justification {
             vote: Payload {
                 instance: 1,
@@ -378,9 +389,9 @@ mod tests {
                 step,
                 supplemental_data: SupplementalData {
                     commitments: keccak_hash::H256::zero(),
-                    power_table: powertable_cid()?,
+                    power_table: Cid::from_str(cid).unwrap(),
                 },
-                value: ECChain::new(base_tipset, vec![]).unwrap(),
+                value: ec_chain,
             },
             signers: BitField::new(),
             signature: vec![7, 8, 9],
@@ -415,7 +426,8 @@ mod tests {
     #[test]
     fn test_finality_certificate_new_success() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let justification = create_mock_justification(Phase::Decide)?;
+        let justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_ok());
@@ -432,7 +444,8 @@ mod tests {
     #[test]
     fn test_finality_certificate_new_wrong_phase() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let justification = create_mock_justification(Phase::Commit);
+        let justification =
+            create_mock_justification(Phase::Commit, &powertable_cid()?.to_string());
 
         let result = FinalityCertificate::new(power_delta, &justification?);
         assert!(result.is_err());
@@ -446,7 +459,8 @@ mod tests {
     #[test]
     fn test_finality_certificate_new_wrong_round() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let mut justification = create_mock_justification(Phase::Decide)?;
+        let mut justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
         justification.vote.round = 1;
 
         let result = FinalityCertificate::new(power_delta, &justification);
@@ -459,7 +473,8 @@ mod tests {
     #[test]
     fn test_finality_certificate_new_empty_value() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let mut justification = create_mock_justification(Phase::Decide)?;
+        let mut justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
         justification.vote.value = ECChain::new_unvalidated(Vec::new());
 
         let result = FinalityCertificate::new(power_delta, &justification);
@@ -556,5 +571,177 @@ mod tests {
         assert_eq!(result[1].id, 1);
         assert_eq!(result[1].power, StoragePower::from(150));
         assert_eq!(result[1].pub_key, PubKey::new(vec![1, 2, 3]));
+    }
+
+    struct MockVerifier;
+
+    #[allow(unused)]
+    impl Verifier for MockVerifier {
+        type Error = ();
+
+        fn verify(
+            &self,
+            pub_key: &PubKey,
+            msg: &[u8],
+            sig: &[u8],
+        ) -> std::result::Result<(), Self::Error> {
+            todo!()
+        }
+
+        fn aggregate(
+            &self,
+            pub_keys: &[PubKey],
+            sigs: &[Vec<u8>],
+        ) -> std::result::Result<Vec<u8>, Self::Error> {
+            todo!()
+        }
+
+        fn verify_aggregate(
+            &self,
+            payload: &[u8],
+            agg_sig: &[u8],
+            signers: &[PubKey],
+        ) -> std::result::Result<(), Self::Error> {
+            todo!()
+        }
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_success() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+
+        let mut certs = Vec::new();
+        for i in 1..=1 {
+            let power_delta = PowerTableDiff::new();
+            let mut justification = create_mock_justification(
+                Phase::Decide,
+                "bafy2bzacecqu3blsvc67mqnva7qlfqlmm3euqtq7fn272smgyaa4ev7dnbxru",
+            )?;
+            justification.vote.instance = i;
+            let cert = FinalityCertificate::new(power_delta, &justification)?;
+            certs.push(cert);
+        }
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table.clone()),
+            1,
+            None,
+            &certs,
+        )?;
+
+        let (next_instance, _, current_power_table) = result;
+
+        assert_eq!(next_instance, 2);
+        let mut initial_power_table = PowerEntries(initial_power_table);
+        initial_power_table.sort();
+        assert_eq!(current_power_table, initial_power_table);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_empty() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let certs = Vec::new();
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table.clone()),
+            1,
+            Some(&base_tipset),
+            &certs,
+        );
+
+        assert!(matches!(result, Err(CertsError::EmptyChain)));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_non_consecutive() -> anyhow::Result<()> {
+        let mut certs = Vec::new();
+        for i in [1, 3, 4] {
+            let power_delta = PowerTableDiff::new();
+            let mut justification = create_mock_justification(
+                Phase::Decide,
+                "bafy2bzacebc3bt6cedhoyw34drrmjvazhu4oj25er2ebk4u445pzycvq4ta4a",
+            )?;
+            justification.vote.instance = i;
+            let cert = FinalityCertificate::new(power_delta, &justification)?;
+            certs.push(cert);
+        }
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(Vec::new()),
+            1,
+            None,
+            &certs,
+        );
+
+        assert!(matches!(result, Err(CertsError::InstanceMismatch { .. })));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_base_mismatch() -> anyhow::Result<()> {
+        let power_delta = PowerTableDiff::new();
+        let justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+        let cert = FinalityCertificate::new(power_delta, &justification)?;
+
+        let mismatched_base = Tipset {
+            epoch: 2,
+            key: vec![4, 5, 6],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(Vec::new()),
+            1,
+            Some(&mismatched_base),
+            &[cert],
+        );
+
+        assert!(matches!(result, Err(CertsError::BaseTipsetMismatch(_))));
+
+        Ok(())
     }
 }

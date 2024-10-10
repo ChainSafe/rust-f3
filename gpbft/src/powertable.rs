@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for PowerEntry {
 }
 
 /// A collection of `PowerEntry` instances representing the power distribution in the network
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(transparent)]
 pub struct PowerEntries(pub Vec<PowerEntry>);
 

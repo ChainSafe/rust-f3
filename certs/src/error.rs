@@ -1,4 +1,4 @@
-use filecoin_f3_gpbft::{ActorId, CborError, Cid, GPBFTError};
+use filecoin_f3_gpbft::{ActorId, CborError, GPBFTError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
