@@ -143,7 +143,7 @@ impl ECChain {
             });
         }
         let mut last_epoch: i64 = -1;
-        for (_, ts) in self.iter().enumerate() {
+        for ts in self.iter() {
             ts.validate()?;
             if ts.epoch <= last_epoch {
                 return Err(GPBFTError::Epochs {
