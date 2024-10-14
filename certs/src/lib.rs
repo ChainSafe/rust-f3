@@ -65,7 +65,7 @@ impl PowerTableDelta {
 pub type PowerTableDiff = Vec<PowerTableDelta>;
 
 /// Represents a single finalized GPBFT instance
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct FinalityCertificate {
     /// The GPBFT instance to which this finality certificate corresponds
     pub gpbft_instance: u64,
@@ -741,6 +741,179 @@ mod tests {
         );
 
         assert!(matches!(result, Err(CertsError::BaseTipsetMismatch(_))));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_invalid_ec_chain() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let power_delta = PowerTableDiff::new();
+        let mut justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+
+        // Create an invalid ECChain (empty in this case)
+        justification.vote.value = ECChain::new_unvalidated(vec![Tipset::default()]);
+
+        let invalid_cert = FinalityCertificate::new(power_delta, &justification)?;
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table),
+            1,
+            Some(&base_tipset),
+            &[invalid_cert],
+        );
+
+        assert!(matches!(
+            result,
+            Err(CertsError::InvalidFinalityCertificate(_, _))
+        ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_empty_ec_chain() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let cert_with_empty_ec_chain = FinalityCertificate::default();
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table),
+            0,
+            Some(&base_tipset),
+            &[cert_with_empty_ec_chain],
+        );
+
+        // println!("Result: {}", result.unwrap_err());
+        assert!(matches!(
+            result,
+            Err(CertsError::EmptyFinalityCertificate(_))
+        ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_incorrect_power_diff() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let mut incorrect_power_delta = PowerTableDiff::new();
+        incorrect_power_delta.push(PowerTableDelta {
+            participant_id: 3, // Non-existent participant
+            power_delta: StoragePower::from(50),
+            signing_key: PubKey::new(vec![7, 8, 9]),
+        });
+
+        let justification =
+            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+        let cert_with_incorrect_power_diff =
+            FinalityCertificate::new(incorrect_power_delta, &justification)?;
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table),
+            1,
+            Some(&base_tipset),
+            &[cert_with_incorrect_power_diff],
+        );
+
+        assert!(matches!(result, Err(CertsError::IncorrectPowerDiff { .. })));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_validate_finality_certificates_empty_vec() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
+        let base_tipset = Tipset {
+            epoch: 1,
+            key: vec![1, 2, 3],
+            power_table: powertable_cid()?,
+            commitments: keccak_hash::H256::zero(),
+        };
+
+        let certs = Vec::new();
+
+        let result = validate_finality_certificates(
+            MockVerifier,
+            &"test_network".to_string(),
+            PowerEntries(initial_power_table),
+            1,
+            Some(&base_tipset),
+            &certs,
+        );
+
+        assert!(matches!(result, Err(CertsError::EmptyChain)));
 
         Ok(())
     }

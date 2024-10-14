@@ -28,7 +28,7 @@ pub type TipsetKey = Vec<u8>;
 type ChainKey = Vec<u8>;
 
 /// Tipset represents a single EC tipset.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Tipset {
     /// The EC epoch (strictly increasing).
     pub epoch: i64,
@@ -92,7 +92,7 @@ impl fmt::Display for Tipset {
 ///
 /// The zero value (empty chain) is not valid and represents a "bottom" value
 /// when used in a GPBFT message.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ECChain(Vec<Tipset>);
 
 impl std::ops::Deref for ECChain {

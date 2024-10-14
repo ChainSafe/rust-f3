@@ -50,7 +50,7 @@ pub use error::GPBFTError;
 type Result<T> = std::result::Result<T, GPBFTError>;
 
 /// Additional data signed by participants in a GPBFT instance
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 pub struct SupplementalData {
     /// Merkle-tree root of instance-specific commitments
     ///
