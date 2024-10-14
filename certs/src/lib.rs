@@ -855,12 +855,11 @@ mod tests {
             commitments: keccak_hash::H256::zero(),
         };
 
-        let mut incorrect_power_delta = PowerTableDiff::new();
-        incorrect_power_delta.push(PowerTableDelta {
+        let incorrect_power_delta = vec![PowerTableDelta {
             participant_id: 3, // Non-existent participant
             power_delta: StoragePower::from(50),
             signing_key: PubKey::new(vec![7, 8, 9]),
-        });
+        }];
 
         let justification =
             create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
