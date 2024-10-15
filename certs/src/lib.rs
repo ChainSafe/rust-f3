@@ -365,18 +365,18 @@ mod tests {
     use filecoin_f3_gpbft::{Cid, Payload};
     use std::str::FromStr;
 
-    fn create_mock_justification(step: Phase, cid: &str) -> anyhow::Result<Justification> {
+    fn create_mock_justification(step: Phase, cid: &str) -> Justification {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
         let additional_tipset = Tipset {
             epoch: 2,
             key: vec![4, 5, 6],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -396,7 +396,7 @@ mod tests {
             signers: BitField::new(),
             signature: vec![7, 8, 9],
         };
-        Ok(j)
+        j
     }
 
     #[test]
@@ -424,10 +424,9 @@ mod tests {
     }
 
     #[test]
-    fn test_finality_certificate_new_success() -> anyhow::Result<()> {
+    fn test_finality_certificate_new_success() {
         let power_delta = PowerTableDiff::new();
-        let justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+        let justification = create_mock_justification(Phase::Decide, &powertable_cid().to_string());
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_ok());
@@ -438,49 +437,44 @@ mod tests {
         assert_eq!(cert.supplemental_data, justification.vote.supplemental_data);
         assert_eq!(cert.signers, justification.signers);
         assert_eq!(cert.signature, justification.signature);
-        Ok(())
     }
 
     #[test]
-    fn test_finality_certificate_new_wrong_phase() -> anyhow::Result<()> {
+    fn test_finality_certificate_new_wrong_phase() {
         let power_delta = PowerTableDiff::new();
-        let justification =
-            create_mock_justification(Phase::Commit, &powertable_cid()?.to_string());
+        let justification = create_mock_justification(Phase::Commit, &powertable_cid().to_string());
 
-        let result = FinalityCertificate::new(power_delta, &justification?);
+        let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
             CertsError::InvalidJustification(Phase::Commit.to_string())
         );
-        Ok(())
     }
 
     #[test]
-    fn test_finality_certificate_new_wrong_round() -> anyhow::Result<()> {
+    fn test_finality_certificate_new_wrong_round() {
         let power_delta = PowerTableDiff::new();
         let mut justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+            create_mock_justification(Phase::Decide, &powertable_cid().to_string());
         justification.vote.round = 1;
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), CertsError::InvalidRound(1));
-        Ok(())
     }
 
     // It makes no sense that ECChain can be empty. Perhaps this warrants a discussion.
     #[test]
-    fn test_finality_certificate_new_empty_value() -> anyhow::Result<()> {
+    fn test_finality_certificate_new_empty_value() {
         let power_delta = PowerTableDiff::new();
         let mut justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+            create_mock_justification(Phase::Decide, &powertable_cid().to_string());
         justification.vote.value = ECChain::new_unvalidated(Vec::new());
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), CertsError::BottomDecision(1));
-        Ok(())
     }
 
     #[test]
@@ -627,7 +621,7 @@ mod tests {
             let mut justification = create_mock_justification(
                 Phase::Decide,
                 "bafy2bzacecqu3blsvc67mqnva7qlfqlmm3euqtq7fn272smgyaa4ev7dnbxru",
-            )?;
+            );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
             certs.push(cert);
@@ -669,7 +663,7 @@ mod tests {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -697,7 +691,7 @@ mod tests {
             let mut justification = create_mock_justification(
                 Phase::Decide,
                 "bafy2bzacebc3bt6cedhoyw34drrmjvazhu4oj25er2ebk4u445pzycvq4ta4a",
-            )?;
+            );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
             certs.push(cert);
@@ -720,14 +714,13 @@ mod tests {
     #[test]
     fn test_validate_finality_certificates_base_mismatch() -> anyhow::Result<()> {
         let power_delta = PowerTableDiff::new();
-        let justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+        let justification = create_mock_justification(Phase::Decide, &powertable_cid().to_string());
         let cert = FinalityCertificate::new(power_delta, &justification)?;
 
         let mismatched_base = Tipset {
             epoch: 2,
             key: vec![4, 5, 6],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -763,13 +756,13 @@ mod tests {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
         let power_delta = PowerTableDiff::new();
         let mut justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+            create_mock_justification(Phase::Decide, &powertable_cid().to_string());
 
         // Create an invalid ECChain (empty in this case)
         justification.vote.value = ECChain::new_unvalidated(vec![Tipset::default()]);
@@ -810,7 +803,7 @@ mod tests {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -851,7 +844,7 @@ mod tests {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -861,8 +854,7 @@ mod tests {
             signing_key: PubKey::new(vec![7, 8, 9]),
         }];
 
-        let justification =
-            create_mock_justification(Phase::Decide, &powertable_cid()?.to_string())?;
+        let justification = create_mock_justification(Phase::Decide, &powertable_cid().to_string());
         let cert_with_incorrect_power_diff =
             FinalityCertificate::new(incorrect_power_delta, &justification)?;
 
@@ -897,7 +889,7 @@ mod tests {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 

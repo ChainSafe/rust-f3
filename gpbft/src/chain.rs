@@ -301,13 +301,13 @@ mod tests {
         let tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
         assert_eq!(tipset.epoch, 1);
         assert_eq!(tipset.key, vec![1, 2, 3]);
-        assert_eq!(tipset.power_table, powertable_cid()?);
+        assert_eq!(tipset.power_table, powertable_cid());
         assert_eq!(tipset.commitments, keccak_hash::H256::zero());
 
         assert!(tipset.validate().is_ok());
@@ -353,20 +353,20 @@ mod tests {
         let base = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: powertable_cid()?,
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
         let suffix = vec![
             Tipset {
                 epoch: 2,
                 key: vec![7, 8, 9],
-                power_table: powertable_cid()?,
+                power_table: powertable_cid(),
                 commitments: keccak_hash::H256::zero(),
             },
             Tipset {
                 epoch: 3,
                 key: vec![13, 14, 15],
-                power_table: powertable_cid()?,
+                power_table: powertable_cid(),
                 commitments: keccak_hash::H256::zero(),
             },
         ];

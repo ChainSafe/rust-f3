@@ -3,11 +3,13 @@
 
 use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
+use fvm_ipld_encoding::tuple::serde_tuple;
+use fvm_ipld_encoding::tuple::Deserialize_tuple;
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
 /// Represents a participant's power and public key in the network
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize_tuple)]
 pub struct PowerEntry {
     /// Unique identifier for the participant
     pub id: ActorId,
@@ -50,16 +52,6 @@ impl Serialize for PowerEntry {
         }
 
         (&self.id, &self.power, &self.pub_key).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for PowerEntry {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let (id, power, pub_key) = Deserialize::deserialize(deserializer)?;
-        Ok(Self { id, power, pub_key })
     }
 }
 
