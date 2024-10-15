@@ -349,7 +349,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ecchain_new() -> anyhow::Result<()> {
+    fn test_ecchain_new() {
         let base = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
