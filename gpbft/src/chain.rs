@@ -311,7 +311,6 @@ mod tests {
         assert_eq!(tipset.commitments, keccak_hash::H256::zero());
 
         assert!(tipset.validate().is_ok());
-        Ok(())
     }
 
     #[test]
@@ -376,7 +375,6 @@ mod tests {
         assert_eq!(chain.base(), Some(&base));
         assert_eq!(chain.suffix(), &suffix);
         assert_eq!(chain.len(), 3); // base + 2 suffix tipsets
-        Ok(())
     }
     #[test]
     fn test_ecchain_base_and_suffix() {
