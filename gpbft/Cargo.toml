@@ -21,7 +21,6 @@ strum_macros = "0.26"
 thiserror = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
 filecoin-f3-gpbft = { features = ["test-utils"], path = "../gpbft" }
 
 [features]
