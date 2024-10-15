@@ -12,8 +12,13 @@ end
 
 # Special cases to suppress false positives.
 def excluded?(crates, crate)
-  # `quickcheck` is required implicitly by `quickcheck_macros`
-  crate == 'quickcheck' && crates.include?('quickcheck_macros')
+  [
+    # `quickcheck` is required implicitly by `quickcheck_macros`
+    crate == 'quickcheck' && crates.include?('quickcheck_macros'),
+    # we are using a trick to enable a `test-utils` feature in the `f3-gpbft` which
+    # triggers a false positive.
+    crate == 'filecoin-f3-gpbft'
+  ].any?
 end
 
 Dir.glob('**/*.toml').each do |file|

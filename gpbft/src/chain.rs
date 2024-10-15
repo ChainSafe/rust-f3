@@ -1,7 +1,11 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use anyhow::anyhow;
+use crate::GPBFTError;
+use cid::multihash::Code::Blake2b256;
+use cid::multihash::MultihashDigest;
+pub use cid::Cid;
+use fvm_ipld_encoding::DAG_CBOR;
 use std::fmt::Display;
 use std::{cmp, fmt};
 
@@ -18,15 +22,13 @@ pub const TIPSET_KEY_MAX_LEN: usize = 20 * CID_MAX_LEN;
 
 pub type TipsetKey = Vec<u8>;
 
-pub type Cid = Vec<u8>;
-
 /// A map key for a chain. The zero value means "bottom".
 /// Note that in reference Go implementation this is a string, but we use
 /// a byte slice here as in Rust a string is assumed to be UTF-8 encoded.
 type ChainKey = Vec<u8>;
 
 /// Tipset represents a single EC tipset.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Tipset {
     /// The EC epoch (strictly increasing).
     pub epoch: i64,
@@ -46,18 +48,24 @@ impl Tipset {
     ///
     /// # Returns
     /// A Result indicating success or failure with an error message
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> crate::Result<()> {
         if self.key.is_empty() {
-            return Err("tipset key must not be empty".to_string());
+            return Err(GPBFTError::TipsetKeyEmpty);
         }
         if self.key.len() > TIPSET_KEY_MAX_LEN {
-            return Err("tipset key too long".to_string());
+            return Err(GPBFTError::TipsetKeyTooLong {
+                len: self.key.len(),
+                max_len: TIPSET_KEY_MAX_LEN,
+            });
         }
-        if self.power_table.is_empty() {
-            return Err("power table CID must not be empty".to_string());
+        if self.power_table == Cid::default() {
+            return Err(GPBFTError::PowerTableCidEmpty);
         }
-        if self.power_table.len() > CID_MAX_LEN {
-            return Err("power table CID too long".to_string());
+        if self.power_table.encoded_len() > CID_MAX_LEN {
+            return Err(GPBFTError::PowerTableCidTooLong {
+                len: self.power_table.encoded_len(),
+                max_len: CID_MAX_LEN,
+            });
         }
         Ok(())
     }
@@ -84,8 +92,8 @@ impl fmt::Display for Tipset {
 ///
 /// The zero value (empty chain) is not valid and represents a "bottom" value
 /// when used in a GPBFT message.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ECChain(pub Vec<Tipset>);
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct ECChain(Vec<Tipset>);
 
 impl std::ops::Deref for ECChain {
     type Target = Vec<Tipset>;
@@ -110,30 +118,38 @@ impl ECChain {
     /// A Result containing the new ECChain
     ///
     /// Note: To conform to the reference implementation we should allow empty ECChain.
-    pub fn new(base: Tipset, suffix: Vec<Tipset>) -> Result<Self, String> {
+    pub fn new(base: Tipset, suffix: Vec<Tipset>) -> crate::Result<Self> {
         let mut tipsets = vec![base];
         tipsets.extend(suffix);
         let chain = ECChain(tipsets);
         chain.validate()?;
         Ok(chain)
     }
+    /// Creates a new ECChain without validation to allow for creation of empty ECChain or ECChain
+    /// from a suffix.
+    pub fn new_unvalidated(tipsets: Vec<Tipset>) -> Self {
+        ECChain(tipsets)
+    }
 
     /// Validates the chain
-    pub fn validate(&self) -> anyhow::Result<(), String> {
+    pub fn validate(&self) -> crate::Result<()> {
         if self.is_empty() {
             return Ok(());
         }
         if self.len() > CHAIN_MAX_LEN {
-            return Err("chain too long".to_string());
+            return Err(GPBFTError::ChainTooLong {
+                len: self.len(),
+                max_len: CHAIN_MAX_LEN,
+            });
         }
         let mut last_epoch: i64 = -1;
-        for (i, ts) in self.iter().enumerate() {
-            ts.validate().map_err(|e| format!("tipset {}: {}", i, e))?;
+        for ts in self.iter() {
+            ts.validate()?;
             if ts.epoch <= last_epoch {
-                return Err(format!(
-                    "chain must have increasing epochs {} <= {}",
-                    ts.epoch, last_epoch
-                ));
+                return Err(GPBFTError::Epochs {
+                    current: ts.epoch,
+                    last: last_epoch,
+                });
             }
             last_epoch = ts.epoch;
         }
@@ -148,6 +164,10 @@ impl ECChain {
     /// Returns the base tipset of the chain
     pub fn base(&self) -> Option<&Tipset> {
         self.first()
+    }
+
+    pub fn head(&self) -> Option<&Tipset> {
+        self.last()
     }
 
     /// Returns the suffix of the chain after the base
@@ -168,12 +188,12 @@ impl ECChain {
     pub fn extend(&self, tips: &[TipsetKey]) -> Option<ECChain> {
         let mut new_chain = self.clone();
         let mut offset = self.last()?.epoch + 1;
-        let pt = self.last()?.power_table.clone();
+        let pt = self.last()?.power_table;
         for tip in tips {
             new_chain.push(Tipset {
                 epoch: offset,
                 key: tip.clone(),
-                power_table: pt.clone(),
+                power_table: pt,
                 commitments: keccak_hash::H256::zero(),
             });
             offset += 1;
@@ -182,9 +202,9 @@ impl ECChain {
     }
 
     /// Returns a chain with suffix truncated to a maximum length
-    pub fn prefix(&self, to: usize) -> anyhow::Result<ECChain> {
+    pub fn prefix(&self, to: usize) -> crate::Result<ECChain> {
         if self.is_empty() {
-            return Err(anyhow!("can't get prefix from zero-valued chain"));
+            return Err(GPBFTError::ChainEmpty);
         }
         let length = cmp::min(to + 1, self.len());
         Ok(ECChain(self[..length].to_vec()))
@@ -229,7 +249,7 @@ impl ECChain {
     pub fn key(&self) -> ChainKey {
         let mut capacity = self.len() * (8 + 32 + 4); // epoch + commitment + ts length
         for ts in self.iter() {
-            capacity += ts.key.len() + ts.power_table.len();
+            capacity += ts.key.len() + ts.power_table.encoded_len();
         }
         let mut buf = Vec::with_capacity(capacity);
         for ts in self.iter() {
@@ -237,10 +257,16 @@ impl ECChain {
             buf.extend_from_slice(&ts.commitments.0);
             buf.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
             buf.extend_from_slice(&ts.key);
-            buf.extend_from_slice(&ts.power_table);
+            buf.extend_from_slice(&ts.power_table.to_bytes());
         }
         buf
     }
+}
+
+/// Hashes the given data and returns a `DAG_CBOR + blake2b-256 CID`.
+pub fn cid_from_bytes(bytes: &[u8]) -> Cid {
+    let hash = Blake2b256.digest(bytes);
+    Cid::new_v1(DAG_CBOR, hash)
 }
 
 impl Display for ECChain {
@@ -267,28 +293,21 @@ impl Display for ECChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn create_test_tipset(epoch: i64) -> Tipset {
-        Tipset {
-            epoch,
-            key: vec![1; TIPSET_KEY_MAX_LEN / 2],
-            power_table: vec![1; CID_MAX_LEN / 2],
-            commitments: keccak_hash::H256::zero(),
-        }
-    }
+    use crate::test_utils::{create_test_tipset, powertable_cid};
+    use cid::Version;
 
     #[test]
     fn test_tipset_create_and_validate() {
         let tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
 
         assert_eq!(tipset.epoch, 1);
         assert_eq!(tipset.key, vec![1, 2, 3]);
-        assert_eq!(tipset.power_table, vec![4, 5, 6]);
+        assert_eq!(tipset.power_table, powertable_cid());
         assert_eq!(tipset.commitments, keccak_hash::H256::zero());
 
         assert!(tipset.validate().is_ok());
@@ -299,7 +318,7 @@ mod tests {
         let empty_tipset = Tipset {
             epoch: 0,
             key: vec![],
-            power_table: vec![],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -308,7 +327,7 @@ mod tests {
         let non_empty_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -320,7 +339,7 @@ mod tests {
         let tipset = Tipset {
             epoch: 10,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: Cid::default(),
             commitments: keccak_hash::H256::zero(),
         };
 
@@ -333,20 +352,20 @@ mod tests {
         let base = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
-            power_table: vec![4, 5, 6],
+            power_table: powertable_cid(),
             commitments: keccak_hash::H256::zero(),
         };
         let suffix = vec![
             Tipset {
                 epoch: 2,
                 key: vec![7, 8, 9],
-                power_table: vec![10, 11, 12],
+                power_table: powertable_cid(),
                 commitments: keccak_hash::H256::zero(),
             },
             Tipset {
                 epoch: 3,
                 key: vec![13, 14, 15],
-                power_table: vec![16, 17, 18],
+                power_table: powertable_cid(),
                 commitments: keccak_hash::H256::zero(),
             },
         ];
@@ -464,9 +483,23 @@ mod tests {
             expected_key.extend_from_slice(&ts.commitments.0);
             expected_key.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
             expected_key.extend_from_slice(&ts.key);
-            expected_key.extend_from_slice(&ts.power_table);
+            expected_key.extend_from_slice(&ts.power_table.to_bytes());
         }
 
         assert_eq!(chain.key(), expected_key);
+    }
+
+    #[test]
+    fn test_cid_from_bytes() {
+        let bytes = vec![1, 2, 3, 4, 5];
+        let cid = cid_from_bytes(&bytes);
+
+        // Check that the CID has the expected properties
+        assert_eq!(cid.version(), Version::V1);
+        assert_eq!(cid.codec(), DAG_CBOR);
+
+        // Verify that the CID's hash matches the input bytes, thus verifying the algorithm
+        let expected_hash = Blake2b256.digest(&bytes);
+        assert_eq!(cid.hash().digest(), expected_hash.digest());
     }
 }

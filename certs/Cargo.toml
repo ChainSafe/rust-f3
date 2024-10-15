@@ -7,3 +7,8 @@ edition = "2021"
 ahash = { workspace = true }
 filecoin-f3-gpbft = { path = "../gpbft" }
 keccak-hash = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+filecoin-f3-gpbft = { path = "../gpbft", features = ["test-utils"] }
