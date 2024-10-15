@@ -382,7 +382,7 @@ mod tests {
 
         let ec_chain = ECChain::new(base_tipset, vec![additional_tipset]).unwrap();
 
-        let j = Justification {
+        Justification {
             vote: Payload {
                 instance: 1,
                 round: 0,
@@ -395,8 +395,7 @@ mod tests {
             },
             signers: BitField::new(),
             signature: vec![7, 8, 9],
-        };
-        j
+        }
     }
 
     #[test]
