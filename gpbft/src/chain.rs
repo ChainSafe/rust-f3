@@ -297,7 +297,7 @@ mod tests {
     use cid::Version;
 
     #[test]
-    fn test_tipset_create_and_validate() -> anyhow::Result<()> {
+    fn test_tipset_create_and_validate() {
         let tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
