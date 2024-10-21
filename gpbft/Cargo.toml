@@ -10,7 +10,7 @@ edition.workspace = true
 [dependencies]
 ahash = { workspace = true }
 base32 = "0.5.1"
-cid = { version = "0.10.1", features = ["std"] }
+cid = { version = "0.11.1", features = ["std"] }
 fvm_ipld_bitfield = "0.6.0"
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
