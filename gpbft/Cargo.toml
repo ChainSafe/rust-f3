@@ -11,7 +11,7 @@ edition.workspace = true
 ahash = { workspace = true }
 base32 = "0.5.1"
 cid = { version = "0.10.1", features = ["std"] }
-fvm_ipld_bitfield = "0.6.0"
+fvm_ipld_bitfield = "0.7.1"
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
 num-bigint = { version = "0.4.6", features = ["serde"] }
