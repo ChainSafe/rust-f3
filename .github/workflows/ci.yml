@@ -42,8 +42,10 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.6
         timeout-minutes: 5
         continue-on-error: true
-      - name: install clang
-        run: apt install clang libclang-dev
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "14.0"
       - name: Install Lint tools
         run: make install-lint-tools-ci
         env:
