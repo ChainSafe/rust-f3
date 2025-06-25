@@ -25,5 +25,8 @@ thiserror = { workspace = true }
 [dev-dependencies]
 filecoin-f3-gpbft = { features = ["test-utils"], path = "../gpbft" }
 
+[target.'cfg(target_family="wasm")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
 [features]
 test-utils = []

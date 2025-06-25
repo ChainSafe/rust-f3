@@ -1,8 +1,11 @@
 check:
-	cargo check
+	cargo check --quiet --no-default-features 
+	cargo check --quiet --all-features
+	cargo check --quiet --no-default-features --target wasm32-unknown-unknown
+	cargo check --quiet --all-features --target wasm32-unknown-unknown
 
 test:
-	cargo test
+	cargo test --all-features
 
 doc:
 	cargo doc
@@ -32,9 +35,8 @@ fmt:
 	corepack enable && yarn && yarn md-fmt
 
 clippy:
-	cargo clippy --all-targets --quiet --no-deps -- --deny=warnings
-	cargo clippy --all-targets --no-default-features --quiet --no-deps -- --deny=warnings
 	cargo clippy --all-targets --all-features --quiet --no-deps -- --deny=warnings
+	cargo clippy --all-features --target wasm32-unknown-unknown --quiet --no-deps -- --deny=warnings
 
 # Checks if all headers are present and adds if not
 license:
