@@ -1,11 +1,11 @@
 check:
-	cargo check
+	cargo check --all-features --all-targets
 
 test:
-	cargo test
+	cargo test --all-features
 
 doc:
-	cargo doc
+	cargo doc --all-features --no-deps
 	cp ./build/vendored-docs-redirect.index.html target/doc/index.html
 
 bench:
