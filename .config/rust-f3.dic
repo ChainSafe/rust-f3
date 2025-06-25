@@ -12,6 +12,7 @@ ChainSafe/M
 CLI
 crypto
 deserialize/D
+enum
 EOF
 Merkle
 MiB
