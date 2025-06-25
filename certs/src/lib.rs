@@ -330,8 +330,8 @@ pub fn validate_finality_certificates<'a>(
         if cert.supplemental_data.power_table != power_table_cid {
             return Err(CertsError::IncorrectPowerDiff {
                 instance: cert.gpbft_instance,
-                expected: cert.supplemental_data.power_table.into(),
-                actual: power_table_cid.into(),
+                expected: power_table_cid.into(),
+                actual: cert.supplemental_data.power_table.into(),
             });
         }
 
