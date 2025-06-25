@@ -57,7 +57,9 @@ pub enum CertsError {
     #[error("base tipset does not match finalized chain at instance {0}")]
     BaseTipsetMismatch(u64),
 
-    #[error("incorrect power diff from finality certificate for instance {instance}: expected {expected:?}, got {got:?}")]
+    #[error(
+        "incorrect power diff from finality certificate for instance {instance}: expected {expected:?}, got {got:?}"
+    )]
     IncorrectPowerDiff {
         instance: u64,
         expected: String,

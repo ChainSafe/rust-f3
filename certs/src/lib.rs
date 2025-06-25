@@ -28,8 +28,8 @@ use ahash::HashMap;
 use filecoin_f3_gpbft::api::Verifier;
 use filecoin_f3_gpbft::chain::Tipset;
 use filecoin_f3_gpbft::{
-    cid_from_bytes, to_vec_cbor, ActorId, BitField, ECChain, Justification, NetworkName, Phase,
-    PowerEntries, PowerEntry, PubKey, Sign, StoragePower, SupplementalData, Zero,
+    ActorId, BitField, ECChain, Justification, NetworkName, Phase, PowerEntries, PowerEntry,
+    PubKey, Sign, StoragePower, SupplementalData, Zero, cid_from_bytes, to_vec_cbor,
 };
 use std::ops::Neg;
 
