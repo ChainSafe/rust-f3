@@ -3,8 +3,7 @@
 
 use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
-use fvm_ipld_encoding::tuple::serde_tuple;
-use fvm_ipld_encoding::tuple::Deserialize_tuple;
+use fvm_ipld_encoding::tuple::{Deserialize_tuple, serde_tuple};
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 

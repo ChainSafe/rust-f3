@@ -6,11 +6,12 @@ members = ["blssig", "certs", "gpbft"]
 authors = ["ChainSafe Systems <forest@chainsafe.io>"]
 repository = "https://github.com/ChainSafe/rust-f3"
 license = "MIT OR Apache-2.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.85.0"
 
 [workspace.dependencies]
-ahash = "0.8.11"
-anyhow = "1.0"
-fvm_ipld_encoding = "0.4.0"
-keccak-hash = "0.11.0"
-thiserror = "2.0.6"
+ahash = "0.8"
+anyhow = "1"
+fvm_ipld_encoding = "0.5"
+keccak-hash = "0.11"
+thiserror = "2"

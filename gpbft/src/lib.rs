@@ -33,12 +33,12 @@ pub use powertable::{PowerEntries, PowerEntry, PowerTable};
 
 // re-exports
 pub use fvm_ipld_bitfield::BitField;
-pub use fvm_ipld_encoding::{to_vec as to_vec_cbor, Error as CborError};
+pub use fvm_ipld_encoding::{Error as CborError, to_vec as to_vec_cbor};
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
 use strum_macros::Display;
 
-pub use crate::chain::{cid_from_bytes, Cid, ECChain};
+pub use crate::chain::{Cid, ECChain, cid_from_bytes};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
 
 mod error;

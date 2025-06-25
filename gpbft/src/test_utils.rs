@@ -1,8 +1,8 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use crate::chain::{Tipset, TIPSET_KEY_MAX_LEN};
-use crate::{cid_from_bytes, PowerEntries, PowerEntry, PubKey};
+use crate::chain::{TIPSET_KEY_MAX_LEN, Tipset};
+use crate::{PowerEntries, PowerEntry, PubKey, cid_from_bytes};
 use cid::Cid;
 
 pub fn create_test_tipset(epoch: i64) -> Tipset {
