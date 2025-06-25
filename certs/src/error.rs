@@ -1,7 +1,9 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use filecoin_f3_gpbft::{ActorId, CborError, GPBFTError};
+use std::borrow::Cow;
+
+use filecoin_f3_gpbft::{ActorId, CborError, Cid, GPBFTError, Phase};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -12,23 +14,26 @@ pub enum CertsError {
     #[error("empty power delta")]
     EmptyPowerDelta,
 
-    #[error("invalid justification: {0}")]
-    InvalidJustification(String),
+    #[error("invalid justification vote phase: expected {expected}, got {actual}")]
+    InvalidJustificationVotePhase { expected: Phase, actual: Phase },
+
+    #[error("invalid justification vote value chain: {0}")]
+    InvalidJustificationVoteValueChain(Cow<'static, str>),
 
     #[error("got a decision for bottom for instance {0}")]
     BottomDecision(u64),
 
     #[error("invalid power table delta: {0}")]
-    InvalidPowerTableDelta(String),
+    InvalidPowerTableDelta(Cow<'static, str>),
 
     #[error("serialization error: {0}")]
-    SerializationError(String),
+    SerializationError(Cow<'static, str>),
 
-    #[error("expected instance {expected}, found instance {found}")]
-    InstanceMismatch { expected: u64, found: u64 },
+    #[error("expected instance {expected}, found instance {actual}")]
+    InstanceMismatch { expected: u64, actual: u64 },
 
-    #[error("invalid round: expected 0, got {0}")]
-    InvalidRound(u64),
+    #[error("invalid round: expected {expected}, got {actual}")]
+    InvalidRound { expected: u64, actual: u64 },
 
     #[error("diff {0} not sorted by participant ID")]
     UnsortedDiff(usize),
@@ -58,12 +63,12 @@ pub enum CertsError {
     BaseTipsetMismatch(u64),
 
     #[error(
-        "incorrect power diff from finality certificate for instance {instance}: expected {expected:?}, got {got:?}"
+        "incorrect power diff from finality certificate for instance {instance}: expected {expected}, got {actual}"
     )]
     IncorrectPowerDiff {
         instance: u64,
-        expected: String,
-        got: String,
+        expected: Box<Cid>, // use `Box` to suppress largest variant warning
+        actual: Box<Cid>,
     },
 
     #[error("cbor encoding error")]
