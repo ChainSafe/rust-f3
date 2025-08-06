@@ -1,5 +1,8 @@
 check:
-	cargo check --all-features --all-targets
+	cargo check --quiet --no-default-features 
+	cargo check --quiet --all-features
+	cargo check --quiet --no-default-features --target wasm32-unknown-unknown
+	cargo check --quiet --all-features --target wasm32-unknown-unknown
 
 test:
 	cargo test --all-features
@@ -12,10 +15,13 @@ bench:
 	cargo bench
 
 # Lints with everything we have in our CI arsenal
-lint-all: audit lint-fmt clippy license spellcheck
+lint-all: lint-fmt clippy license spellcheck deny
 
-audit:
-	cargo audit || (echo "See .config/audit.toml"; false)
+deny:
+	cargo deny check bans licenses sources || (echo "See deny.toml"; false)
+
+deny-advisories:
+	cargo deny check advisories || (echo "See deny.toml"; false)
 
 lint-fmt:
 	cargo fmt --all --check
@@ -29,9 +35,8 @@ fmt:
 	corepack enable && yarn && yarn md-fmt
 
 clippy:
-	cargo clippy --all-targets --quiet --no-deps -- --deny=warnings
-	cargo clippy --all-targets --no-default-features --quiet --no-deps -- --deny=warnings
 	cargo clippy --all-targets --all-features --quiet --no-deps -- --deny=warnings
+	cargo clippy --all-features --target wasm32-unknown-unknown --quiet --no-deps -- --deny=warnings
 
 # Checks if all headers are present and adds if not
 license:
@@ -42,7 +47,7 @@ spellcheck:
 
 install-lint-tools:
 	cargo install --locked taplo-cli
-	cargo install --locked cargo-audit
+	cargo install --locked cargo-deny
 	cargo install --locked cargo-spellcheck
 
 install-lint-tools-ci:
@@ -50,4 +55,4 @@ install-lint-tools-ci:
 	tar xzf cargo-binstall-x86_64-unknown-linux-musl.tgz
 	cp cargo-binstall ~/.cargo/bin/cargo-binstall
 
-	cargo binstall --no-confirm taplo-cli cargo-spellcheck cargo-audit
+	cargo binstall --no-confirm taplo-cli cargo-spellcheck cargo-deny
