@@ -36,7 +36,7 @@ pub use fvm_ipld_bitfield::BitField;
 pub use fvm_ipld_encoding::{Error as CborError, to_vec as to_vec_cbor};
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
-use strum_macros::Display;
+use strum_macros::{Display, IntoStaticStr};
 
 pub use crate::chain::{Cid, ECChain, cid_from_bytes};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
@@ -66,7 +66,7 @@ pub struct SupplementalData {
 
 /// Represents the different phases of the GPBFT consensus protocol
 #[repr(u8)]
-#[derive(Display, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Display, IntoStaticStr, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Phase {
     /// This phase marks the beginning of a new consensus round. During this phase,
@@ -95,7 +95,7 @@ pub struct Payload {
     /// GPBFT round number
     pub round: u64,
     /// Current phase of the GPBFT protocol
-    pub step: Phase,
+    pub phase: Phase,
     /// Additional data related to this consensus instance
     pub supplemental_data: SupplementalData,
     /// The agreed-upon value for this instance
@@ -115,14 +115,14 @@ impl Payload {
     pub fn new(
         instance: u64,
         round: u64,
-        step: Phase,
+        phase: Phase,
         supplemental_data: SupplementalData,
         value: ECChain,
     ) -> Self {
         Payload {
             instance,
             round,
-            step,
+            phase,
             supplemental_data,
             value,
         }
@@ -147,7 +147,7 @@ mod tests {
     fn test_payload_new() {
         let instance = 1;
         let round = 2;
-        let step = Phase::Commit;
+        let phase = Phase::Commit;
         let supplemental_data = SupplementalData {
             commitments: keccak_hash::H256::zero(),
             power_table: Cid::default(),
@@ -157,14 +157,14 @@ mod tests {
         let payload = Payload::new(
             instance,
             round,
-            step,
+            phase,
             supplemental_data.clone(),
             value.clone(),
         );
 
         assert_eq!(payload.instance, instance);
         assert_eq!(payload.round, round);
-        assert_eq!(payload.step, step);
+        assert_eq!(payload.phase, phase);
         assert_eq!(payload.supplemental_data, supplemental_data);
         assert_eq!(payload.value, value);
     }

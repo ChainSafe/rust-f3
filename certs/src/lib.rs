@@ -94,14 +94,18 @@ impl FinalityCertificate {
     /// # Returns
     /// A Result containing the new `FinalityCertificate` if successful
     pub fn new(power_delta: PowerTableDiff, justification: &Justification) -> Result<Self> {
-        if justification.vote.step != Phase::Decide {
-            return Err(CertsError::InvalidJustification(
-                justification.vote.step.to_string(),
-            ));
+        if justification.vote.phase != Phase::Decide {
+            return Err(CertsError::InvalidJustificationVotePhase {
+                expected: Phase::Decide,
+                actual: justification.vote.phase,
+            });
         }
 
         if justification.vote.round != 0 {
-            return Err(CertsError::InvalidRound(justification.vote.round));
+            return Err(CertsError::InvalidRound {
+                expected: 0,
+                actual: justification.vote.round,
+            });
         }
 
         if justification.vote.value.is_empty() {
@@ -295,7 +299,7 @@ pub fn validate_finality_certificates<'a>(
         if cert.gpbft_instance != next_instance {
             return Err(CertsError::InstanceMismatch {
                 expected: next_instance,
-                found: cert.gpbft_instance,
+                actual: cert.gpbft_instance,
             });
         }
 
@@ -326,8 +330,8 @@ pub fn validate_finality_certificates<'a>(
         if cert.supplemental_data.power_table != power_table_cid {
             return Err(CertsError::IncorrectPowerDiff {
                 instance: cert.gpbft_instance,
-                expected: cert.supplemental_data.power_table.to_string(),
-                got: power_table_cid.to_string(),
+                expected: power_table_cid.into(),
+                actual: cert.supplemental_data.power_table.into(),
             });
         }
 
@@ -365,7 +369,7 @@ mod tests {
     use filecoin_f3_gpbft::{Cid, Payload};
     use std::str::FromStr;
 
-    fn create_mock_justification(step: Phase, cid: &str) -> Justification {
+    fn create_mock_justification(phase: Phase, cid: &str) -> Justification {
         let base_tipset = Tipset {
             epoch: 1,
             key: vec![1, 2, 3],
@@ -386,7 +390,7 @@ mod tests {
             vote: Payload {
                 instance: 1,
                 round: 0,
-                step,
+                phase,
                 supplemental_data: SupplementalData {
                     commitments: keccak_hash::H256::zero(),
                     power_table: Cid::from_str(cid).unwrap(),
@@ -447,7 +451,10 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            CertsError::InvalidJustification(Phase::Commit.to_string())
+            CertsError::InvalidJustificationVotePhase {
+                expected: Phase::Decide,
+                actual: Phase::Commit
+            }
         );
     }
 
@@ -460,7 +467,13 @@ mod tests {
 
         let result = FinalityCertificate::new(power_delta, &justification);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), CertsError::InvalidRound(1));
+        assert_eq!(
+            result.unwrap_err(),
+            CertsError::InvalidRound {
+                expected: 0,
+                actual: 1
+            }
+        );
     }
 
     // It makes no sense that ECChain can be empty. Perhaps this warrants a discussion.
