@@ -8,20 +8,26 @@ license.workspace = true
 edition.workspace = true
 
 [dependencies]
+filecoin-f3-merkle = { path = "../merkle" }
 ahash = { workspace = true }
-base32 = "0.5.1"
-cid = { version = "0.10.1", features = ["std"] }
-fvm_ipld_bitfield = "0.7.1"
+base32 = { workspace = true }
+cid = { workspace = true }
+fvm_ipld_bitfield = { workspace = true }
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
-num-bigint = { version = "0.4.6", features = ["serde"] }
-num-traits = "0.2.19"
-serde = "1.0"
-strum_macros = "0.26"
+num-bigint = { workspace = true }
+num-traits = { workspace = true }
+serde_cbor = { workspace = true }
+serde = { workspace = true }
+strum_macros = { workspace = true }
 thiserror = { workspace = true }
+anyhow = { workspace = true }
 
 [dev-dependencies]
 filecoin-f3-gpbft = { features = ["test-utils"], path = "../gpbft" }
+hex = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
 
 [features]
 test-utils = []

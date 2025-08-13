@@ -1,7 +1,7 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use filecoin_f3_gpbft::{ActorId, CborError, GPBFTError};
+use filecoin_f3_gpbft::{ActorId, GPBFTError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -63,7 +63,23 @@ pub enum CertsError {
         expected: String,
         got: String,
     },
+    #[error("BLS signature verification failed for instance {instance}: {error}")]
+    SignatureVerificationFailed { instance: u64, error: String },
 
-    #[error("cbor encoding error")]
-    EncodingError(#[from] CborError),
+    #[error("insufficient power for finality certificate at instance {instance}: {signer_power} < 2/3 * {total_power}")]
+    InsufficientPower {
+        instance: u64,
+        signer_power: i64,
+        total_power: i64,
+    },
+
+    #[error("signer index {signer_index} out of bounds for power table of size {power_table_size} at instance {instance}")]
+    SignerIndexOutOfBounds {
+        instance: u64,
+        signer_index: usize,
+        power_table_size: usize,
+    },
+
+    #[error("signer {signer_id} has zero effective power at instance {instance}")]
+    ZeroEffectivePower { instance: u64, signer_id: u64 },
 }

@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::PubKey;
+use std::fmt::Display;
 
 /// Verifier trait for signature verification in the GPBFT consensus protocol
 pub trait Verifier {
     /// Error type. Once there is a concrete implementation of the `Verifier` trait,
     /// this might just be a concrete error type.
-    type Error;
+    type Error: Display;
     /// Verifies a signature for the given public key
     ///
     /// This method must be safe for concurrent use.

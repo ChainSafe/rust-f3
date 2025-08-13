@@ -74,6 +74,32 @@ impl Tipset {
     pub fn is_empty(&self) -> bool {
         self.key.is_empty()
     }
+
+    /// Serializes for signing
+    /// Returns bytes in this exact order:
+    /// 1. epoch (8 bytes, big-endian)
+    /// 2. commitments (32 bytes)  
+    /// 3. tipset_cid
+    /// 4. power_table_cid
+    pub fn serialize_for_signing(&self) -> Vec<u8> {
+        // CBOR-encode the tipset key using serde_cbor to match go-f3's cbg.WriteByteArray
+        use serde_cbor::Value;
+        let cbor_value = Value::Bytes(self.key.clone());
+        let cbor_bytes = serde_cbor::to_vec(&cbor_value).unwrap();
+        let tipset_cid = cid_from_bytes(&cbor_bytes);
+
+        // Calculate capacity: 8 + 32 + tipset_cid + power_table_cid
+        let mut buf =
+            Vec::with_capacity(8 + 32 + tipset_cid.encoded_len() + self.power_table.encoded_len());
+
+        // epoch || commitments || tipset_cid || power_table_cid
+        buf.extend_from_slice(&self.epoch.to_be_bytes()); // 8 bytes
+        buf.extend_from_slice(&self.commitments.0); // 32 bytes
+        buf.extend_from_slice(&tipset_cid.to_bytes());
+        buf.extend_from_slice(&self.power_table.to_bytes());
+
+        buf
+    }
 }
 
 impl fmt::Display for Tipset {
@@ -247,19 +273,16 @@ impl ECChain {
 
     /// Returns an identifier for the chain suitable for use as a map key
     pub fn key(&self) -> ChainKey {
-        let mut capacity = self.len() * (8 + 32 + 4); // epoch + commitment + ts length
-        for ts in self.iter() {
-            capacity += ts.key.len() + ts.power_table.encoded_len();
+        if self.is_empty() {
+            return filecoin_f3_merkle::ZERO_DIGEST.to_vec();
         }
-        let mut buf = Vec::with_capacity(capacity);
-        for ts in self.iter() {
-            buf.extend_from_slice(&ts.epoch.to_be_bytes());
-            buf.extend_from_slice(&ts.commitments.0);
-            buf.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
-            buf.extend_from_slice(&ts.key);
-            buf.extend_from_slice(&ts.power_table.to_bytes());
-        }
-        buf
+
+        // Collect serialized bytes for each tipset
+        let values: Vec<Vec<u8>> = self.iter().map(|ts| ts.serialize_for_signing()).collect();
+
+        // Compute merkle tree root (matches go-f3)
+        let merkle_root = filecoin_f3_merkle::tree(&values);
+        merkle_root.to_vec()
     }
 }
 
@@ -469,24 +492,19 @@ mod tests {
     }
 
     #[test]
-    // This test just makes sure to fail if the implementation changes. There isn't much more that
-    // can be done, except for comparing the output of `key()` to a hardcoded value.
-    fn test_ecchain_key() {
+    fn test_ecchain_key_merkle_tree() {
         let base = create_test_tipset(1);
         let tipset2 = create_test_tipset(2);
         let tipset3 = create_test_tipset(3);
         let chain = ECChain::new(base, vec![tipset2, tipset3]).unwrap();
 
-        let mut expected_key = Vec::new();
-        for ts in chain.iter() {
-            expected_key.extend_from_slice(&ts.epoch.to_be_bytes());
-            expected_key.extend_from_slice(&ts.commitments.0);
-            expected_key.extend_from_slice(&(ts.key.len() as u32).to_be_bytes());
-            expected_key.extend_from_slice(&ts.key);
-            expected_key.extend_from_slice(&ts.power_table.to_bytes());
-        }
+        let key = chain.key();
+        assert_eq!(key.len(), 32);
 
-        assert_eq!(chain.key(), expected_key);
+        // Different chains should produce different keys
+        let different_chain = ECChain::new(create_test_tipset(10), vec![]).unwrap();
+        let different_key = different_chain.key();
+        assert_ne!(key, different_key);
     }
 
     #[test]
@@ -501,5 +519,47 @@ mod tests {
         // Verify that the CID's hash matches the input bytes, thus verifying the algorithm
         let expected_hash = Blake2b256.digest(&bytes);
         assert_eq!(cid.hash().digest(), expected_hash.digest());
+    }
+
+    /// Clone of TestTipSetMarshalForSigning from go-f3/gpbft/signature_test.go
+    /// with active test vectors, to ensure correctness.
+    #[test]
+    fn test_tipset_serialize_for_signing() {
+        const EXPECTED_LEN: usize = 8 + 32 + 38 + 38; // epoch + commitments + tipset_cid + power_table_cid
+
+        // Setup matching go-f3
+        let mut tsk = vec![0u8; 38 * 5]; // 190 bytes
+        tsk[0] = 110;
+        let comm = {
+            let mut c = [0u8; 32];
+            c[0] = 0x42;
+            keccak_hash::H256(c)
+        };
+        let pt_cid = cid_from_bytes(b"pt");
+
+        let ts = Tipset {
+            epoch: 1,
+            key: tsk.clone(),
+            power_table: pt_cid,
+            commitments: comm,
+        };
+
+        // Generate tipset CID matching go-f3
+        use serde_cbor::Value;
+        let cbor_value = Value::Bytes(tsk);
+        let cbor_bytes = serde_cbor::to_vec(&cbor_value).unwrap();
+        let ts_cid = cid_from_bytes(&cbor_bytes);
+
+        let encoded = ts.serialize_for_signing();
+
+        // Structural assertions from go-f3
+        assert_eq!(encoded.len(), EXPECTED_LEN);
+        assert_eq!(
+            u64::from_be_bytes(encoded[..8].try_into().unwrap()),
+            ts.epoch as u64
+        );
+        assert_eq!(&encoded[8..40], &ts.commitments.0);
+        assert_eq!(&encoded[40..78], &ts_cid.to_bytes());
+        assert_eq!(&encoded[78..], &ts.power_table.to_bytes());
     }
 }

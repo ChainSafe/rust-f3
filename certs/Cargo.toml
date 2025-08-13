@@ -4,10 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ahash = { workspace = true }
 filecoin-f3-gpbft = { path = "../gpbft" }
+filecoin-f3-blssig = { path = "../blssig" }
+ahash = { workspace = true }
 keccak-hash = { workspace = true }
 thiserror = { workspace = true }
+serde = { workspace = true }
+serde_cbor = { workspace = true }
+num-bigint = { workspace = true }
+num-traits = { workspace = true }
+hex = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
