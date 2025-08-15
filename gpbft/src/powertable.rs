@@ -147,9 +147,14 @@ pub fn signer_scaled_total(scaled_powers: &[i64], signer_indices: &[u64]) -> any
     let mut signer_total = 0;
     for &index in signer_indices {
         let idx = index as usize;
-        if idx < scaled_powers.len() {
-            signer_total += scaled_powers[idx];
+        if idx >= scaled_powers.len() {
+            return Err(anyhow!(
+                "signer index {} out of bounds (max: {})",
+                idx,
+                scaled_powers.len().saturating_sub(1)
+            ));
         }
+        signer_total += scaled_powers[idx];
     }
 
     Ok(signer_total)
