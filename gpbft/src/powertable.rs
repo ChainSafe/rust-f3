@@ -4,10 +4,9 @@
 use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
 use anyhow::anyhow;
-use fvm_ipld_encoding::tuple::serde_tuple;
-use fvm_ipld_encoding::tuple::Deserialize_tuple;
 use num_traits::{ToPrimitive, Zero as NumZero};
 use serde::Deserialize;
+use fvm_ipld_encoding::tuple::{Deserialize_tuple, serde_tuple};
 use std::ops::{Deref, DerefMut};
 
 const MAX_POWER: i64 = 0xffff; // = 65535

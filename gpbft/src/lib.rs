@@ -35,7 +35,7 @@ mod types;
 
 // re-exports
 pub use fvm_ipld_bitfield::BitField;
-pub use fvm_ipld_encoding::{to_vec as to_vec_cbor, Error as CborError};
+pub use fvm_ipld_encoding::{Error as CborError, to_vec as to_vec_cbor};
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
 

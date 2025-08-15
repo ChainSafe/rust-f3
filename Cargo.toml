@@ -6,14 +6,15 @@ members = ["blssig", "certs", "gpbft", "lightclient", "merkle", "rpc"]
 authors = ["ChainSafe Systems <forest@chainsafe.io>"]
 repository = "https://github.com/ChainSafe/rust-f3"
 license = "MIT OR Apache-2.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.85.0"
 
 [workspace.dependencies]
-ahash = "0.8.11"
-anyhow = "1.0"
-fvm_ipld_encoding = "0.4.0"
-keccak-hash = "0.11.0"
-thiserror = "2.0.6"
+ahash = "0.8"
+anyhow = "1"
+fvm_ipld_encoding = "0.5"
+keccak-hash = "0.11"
+thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"]}
 serde_json = { version = "1", features = ["raw_value"] }

@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::GPBFTError;
-use cid::multihash::Code::Blake2b256;
-use cid::multihash::MultihashDigest;
 pub use cid::Cid;
 use fvm_ipld_encoding::DAG_CBOR;
+use multihash_codetable::{Code::Blake2b256, MultihashDigest as _};
 use std::fmt::Display;
 use std::{cmp, fmt};
 
@@ -198,11 +197,7 @@ impl ECChain {
 
     /// Returns the suffix of the chain after the base
     pub fn suffix(&self) -> &[Tipset] {
-        if self.is_empty() {
-            &[]
-        } else {
-            &self[1..]
-        }
+        if self.is_empty() { &[] } else { &self[1..] }
     }
 
     /// Returns a new chain with the same base and no suffix
