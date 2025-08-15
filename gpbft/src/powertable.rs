@@ -4,9 +4,9 @@
 use crate::{ActorId, PubKey, StoragePower};
 use ahash::HashMap;
 use anyhow::anyhow;
+use fvm_ipld_encoding::tuple::{Deserialize_tuple, serde_tuple};
 use num_traits::{ToPrimitive, Zero as NumZero};
 use serde::Deserialize;
-use fvm_ipld_encoding::tuple::{Deserialize_tuple, serde_tuple};
 use std::ops::{Deref, DerefMut};
 
 const MAX_POWER: i64 = 0xffff; // = 65535
@@ -167,11 +167,7 @@ fn div_ceil(a: i64, b: i64) -> i64 {
     }
     let quo = a / b;
     let rem = a % b;
-    if rem != 0 {
-        quo + 1
-    } else {
-        quo
-    }
+    if rem != 0 { quo + 1 } else { quo }
 }
 
 /// Represents the power distribution and lookup table for actors in the network

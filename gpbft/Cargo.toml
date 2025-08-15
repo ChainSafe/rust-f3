@@ -17,7 +17,6 @@ fvm_ipld_bitfield = { workspace = true }
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
 num-bigint = { workspace = true }
-multihash-codetable = { version = "0.1" }
 num-traits = { workspace = true }
 serde_cbor = { workspace = true }
 serde = { workspace = true }

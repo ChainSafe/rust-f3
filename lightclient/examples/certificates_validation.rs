@@ -12,8 +12,8 @@
 //! For production use, certificates could be fetched concurrently.
 //!
 use anyhow::Result;
-use filecoin_f3_gpbft::powertable::{is_strong_quorum, signer_scaled_total};
 use filecoin_f3_gpbft::PowerEntries;
+use filecoin_f3_gpbft::powertable::{is_strong_quorum, signer_scaled_total};
 use filecoin_f3_lightclient::LightClient;
 use std::env;
 

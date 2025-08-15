@@ -28,8 +28,9 @@ use ahash::HashMap;
 use filecoin_f3_gpbft::api::Verifier;
 pub use filecoin_f3_gpbft::chain::Tipset;
 use filecoin_f3_gpbft::{
-    cid_from_bytes, is_strong_quorum, ActorId, BitField, ECChain, Justification, NetworkName,
-    Payload, Phase, PowerEntries, PowerEntry, PubKey, Sign, StoragePower, SupplementalData, Zero,
+    ActorId, BitField, ECChain, Justification, NetworkName, Payload, Phase, PowerEntries,
+    PowerEntry, PubKey, Sign, StoragePower, SupplementalData, Zero, cid_from_bytes,
+    is_strong_quorum,
 };
 use std::ops::Neg;
 
@@ -267,7 +268,7 @@ fn verify_signature(
 ) -> Result<()> {
     let (scaled_powers, scaled_total) = power_table
         .scaled()
-        .map_err(|e| CertsError::SerializationError(e.to_string()))?;
+        .map_err(|e| CertsError::SerializationError(e.to_string().into()))?;
 
     let signers: Vec<u64> = cert.signers.iter().collect();
     let signer_scaled_total =
@@ -284,7 +285,7 @@ fn verify_signature(
     let payload = Payload {
         instance: cert.gpbft_instance,
         round: 0,
-        step: Phase::Decide,
+        phase: Phase::Decide,
         supplemental_data: cert.supplemental_data.clone(),
         value: cert.ec_chain.clone(),
     };

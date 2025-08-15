@@ -9,7 +9,7 @@ pub struct Payload {
     /// GPBFT round number
     pub round: u64,
     /// Current phase of the GPBFT protocol
-    pub step: Phase,
+    pub phase: Phase,
     /// Additional data related to this consensus instance
     pub supplemental_data: SupplementalData,
     /// The agreed-upon value for this instance
@@ -23,20 +23,20 @@ impl Payload {
     ///
     /// * `instance` - The GPBFT instance number
     /// * `round` - The current round number
-    /// * `step` - The current phase of the protocol
+    /// * `phase` - The current phase of the protocol
     /// * `supplemental_data` - Additional data for this instance
     /// * `value` - The agreed-upon ECChain
     pub fn new(
         instance: u64,
         round: u64,
-        step: Phase,
+        phase: Phase,
         supplemental_data: SupplementalData,
         value: ECChain,
     ) -> Self {
         Payload {
             instance,
             round,
-            step,
+            phase,
             supplemental_data,
             value,
         }
@@ -75,7 +75,7 @@ impl Payload {
         buf.extend_from_slice(SEPARATOR.as_bytes());
 
         // Write step (1 byte)
-        buf.push(self.step as u8);
+        buf.push(self.phase as u8);
 
         // Write round (8 bytes, big-endian)
         buf.extend_from_slice(&self.round.to_be_bytes());
@@ -160,7 +160,7 @@ mod tests {
 
         assert_eq!(payload.instance, instance);
         assert_eq!(payload.round, round);
-        assert_eq!(payload.step, phase);
+        assert_eq!(payload.phase, phase);
         assert_eq!(payload.supplemental_data, supplemental_data);
         assert_eq!(payload.value, value);
     }
@@ -199,7 +199,7 @@ mod tests {
         let payload = Payload {
             instance: 1,
             round: 2,
-            step: Phase::Prepare, // 3
+            phase: Phase::Prepare, // 3
             supplemental_data: SupplementalData {
                 commitments: {
                     let mut commits = [0u8; 32];
@@ -242,7 +242,7 @@ mod tests {
         let decide_payload = Payload {
             instance: 29,
             round: 0,
-            step: Phase::Decide,
+            phase: Phase::Decide,
             supplemental_data: SupplementalData {
                 commitments: keccak_hash::H256::zero(),
                 power_table: power_table_cid,

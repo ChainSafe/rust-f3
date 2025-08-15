@@ -3,8 +3,8 @@
 //! NOTE: currently uses standard BLS aggregation without coefficient weighting, hence returns incorrect values compared to go-f3.
 //!
 use crate::verifier::BLSError;
-use bls12_381::{G1Projective, G2Projective};
 use bls_signatures::{PublicKey, Serialize, Signature};
+use bls12_381::{G1Projective, G2Projective};
 use filecoin_f3_gpbft::PubKey;
 
 /// BDN aggregation context for managing signature and public key aggregation

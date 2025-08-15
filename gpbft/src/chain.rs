@@ -3,8 +3,9 @@
 
 use crate::GPBFTError;
 pub use cid::Cid;
+use cid::multihash::Code::Blake2b256;
+use cid::multihash::MultihashDigest;
 use fvm_ipld_encoding::DAG_CBOR;
-use multihash_codetable::{Code::Blake2b256, MultihashDigest as _};
 use std::fmt::Display;
 use std::{cmp, fmt};
 

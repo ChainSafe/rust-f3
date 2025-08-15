@@ -1,6 +1,6 @@
-use bls_signatures::{verify_messages, PublicKey, Serialize, Signature};
-use filecoin_f3_gpbft::api::Verifier;
+use bls_signatures::{PublicKey, Serialize, Signature, verify_messages};
 use filecoin_f3_gpbft::PubKey;
+use filecoin_f3_gpbft::api::Verifier;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use thiserror::Error;

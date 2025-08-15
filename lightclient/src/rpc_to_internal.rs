@@ -1,5 +1,5 @@
 use anyhow::Context;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use filecoin_f3_certs as certs;
 use filecoin_f3_gpbft::chain;
 use filecoin_f3_gpbft::{BitField, Cid, ECChain, PubKey, SupplementalData};

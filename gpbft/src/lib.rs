@@ -39,11 +39,11 @@ pub use fvm_ipld_encoding::{Error as CborError, to_vec as to_vec_cbor};
 pub use num_bigint::{BigInt, Sign};
 pub use num_traits::Zero;
 
-pub use crate::chain::{cid_from_bytes, Cid, ECChain, Tipset};
+pub use crate::chain::{Cid, ECChain, Tipset, cid_from_bytes};
 pub use crate::justification::Justification;
 pub use crate::payload::{Payload, Phase, SupplementalData};
 pub use error::GPBFTError;
-pub use powertable::{is_strong_quorum, PowerEntries, PowerEntry, PowerTable};
+pub use powertable::{PowerEntries, PowerEntry, PowerTable, is_strong_quorum};
 pub use types::{ActorId, NetworkName, PubKey, StoragePower};
 
 type Result<T> = std::result::Result<T, GPBFTError>;

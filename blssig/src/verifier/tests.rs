@@ -1,7 +1,7 @@
 use super::BLSVerifier;
 use bls_signatures::{PrivateKey, Serialize};
-use filecoin_f3_gpbft::api::Verifier;
 use filecoin_f3_gpbft::PubKey;
+use filecoin_f3_gpbft::api::Verifier;
 
 /// BLS signer implementation for testing
 pub struct BLSSigner {
