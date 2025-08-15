@@ -13,7 +13,7 @@ fn generate_inputs(dst: &str, n: usize) -> Vec<Vec<u8>> {
 #[test]
 fn test_hash_zero() {
     let test: &[Vec<u8>] = &[];
-    let root = tree(test);
+    let root = tree(test).unwrap();
     assert_eq!(root, ZERO_DIGEST);
 }
 
@@ -43,7 +43,7 @@ fn test_hash_tree_golden() {
     let n = 16;
     for i in 0..n {
         let inputs = generate_inputs("golden", i + 1);
-        let res = tree(&inputs);
+        let res = tree(&inputs).unwrap();
         let res_hex = hex::encode(res);
         assert_eq!(
             expected_hex[i], res_hex,

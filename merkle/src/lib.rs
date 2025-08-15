@@ -6,6 +6,7 @@
 #[cfg(test)]
 mod tests;
 
+use anyhow::anyhow;
 use sha3::{Digest, Keccak256};
 
 /// 32-byte digest matching go-f3's merkle.Digest
@@ -19,9 +20,9 @@ const INTERNAL_MARKER: &[u8] = &[0x00];
 const LEAF_MARKER: &[u8] = &[0x01];
 
 /// Computes a merkle tree root from a list of byte values
-pub fn tree(values: &[Vec<u8>]) -> MerkleDigest {
+pub fn tree(values: &[Vec<u8>]) -> anyhow::Result<MerkleDigest> {
     if values.is_empty() {
-        return ZERO_DIGEST;
+        return Ok(ZERO_DIGEST);
     }
 
     let depth = calculate_depth(values.len());
@@ -35,18 +36,18 @@ fn calculate_depth(length: usize) -> usize {
     }
 
     let bits_len = (length - 1).leading_zeros();
-    64 - bits_len as usize
+    (usize::BITS - bits_len) as usize
 }
 
 /// Recursive function to build the merkle tree
-fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> MerkleDigest {
+fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> anyhow::Result<MerkleDigest> {
     if values.is_empty() {
-        return ZERO_DIGEST;
+        return Ok(ZERO_DIGEST);
     }
 
     if depth == 0 {
         if values.len() != 1 {
-            panic!("expected one value at the leaf");
+            return Err(anyhow!("expected one value at the leaf"))
         }
         // Leaf node: hash(0x01 || value)
         hasher.update(LEAF_MARKER);
@@ -54,13 +55,13 @@ fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> Merkl
         let result = hasher.finalize_reset();
         let mut digest = [0u8; 32];
         digest.copy_from_slice(&result);
-        digest
+        Ok(digest)
     } else {
         // Split point: min(1<<(depth-1), len(values))
         let split = std::cmp::min(1 << (depth - 1), values.len());
 
-        let left_hash = build_tree(depth - 1, &values[..split], hasher);
-        let right_hash = build_tree(depth - 1, &values[split..], hasher);
+        let left_hash = build_tree(depth - 1, &values[..split], hasher)?;
+        let right_hash = build_tree(depth - 1, &values[split..], hasher)?;
 
         // Internal node: hash(0x00 || left || right)
         hasher.update(INTERNAL_MARKER);
@@ -69,6 +70,6 @@ fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> Merkl
         let result = hasher.finalize_reset();
         let mut digest = [0u8; 32];
         digest.copy_from_slice(&result);
-        digest
+        Ok(digest)
     }
 }

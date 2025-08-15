@@ -277,7 +277,7 @@ impl ECChain {
         let values: Vec<Vec<u8>> = self.iter().map(|ts| ts.serialize_for_signing()).collect();
 
         // Compute merkle tree root (matches go-f3)
-        let merkle_root = filecoin_f3_merkle::tree(&values);
+        let merkle_root = filecoin_f3_merkle::tree(&values).unwrap();
         merkle_root.to_vec()
     }
 }
