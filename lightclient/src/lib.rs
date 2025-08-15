@@ -10,9 +10,9 @@ use filecoin_f3_gpbft::{ECChain, PowerEntries};
 use filecoin_f3_rpc::RPCClient;
 
 pub struct LightClient {
-    pub rpc: RPCClient,
-    pub network_name: String,
-    pub verifier: BLSVerifier,
+    rpc: RPCClient,
+    network_name: String,
+    verifier: BLSVerifier,
 }
 
 #[derive(Debug, Clone)]

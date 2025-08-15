@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use crate::PubKey;
-use std::fmt::Display;
 
 /// Verifier trait for signature verification in the GPBFT consensus protocol
 pub trait Verifier: Send + Sync {
