@@ -123,6 +123,6 @@ pub enum CertsError {
         power_table_size: usize,
     },
 
-    #[error("signer {signer_id} has zero effective power at instance {instance}")]
-    ZeroEffectivePower { instance: u64, signer_id: u64 },
+    #[error("signer {signer} has zero effective power at instance {instance}")]
+    ZeroEffectivePower { instance: u64, signer: ActorId },
 }

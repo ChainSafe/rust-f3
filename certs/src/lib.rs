@@ -457,7 +457,7 @@ fn signer_scaled_total(
         if scaled_power == 0 {
             return Err(CertsError::ZeroEffectivePower {
                 instance,
-                signer_id: power_table[idx].id,
+                signer: power_table[idx].id,
             });
         }
 
