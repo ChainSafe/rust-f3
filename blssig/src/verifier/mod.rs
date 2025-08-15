@@ -86,9 +86,10 @@ impl BLSVerifier {
     fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
         {
-            let cache = self.point_cache.read().unwrap();
-            if let Some(cached_key) = cache.get(pub_key_bytes) {
-                return Ok(*cached_key);
+            if let Ok(cache) = self.point_cache.read() {
+                if let Some(cached_key) = cache.get(pub_key_bytes) {
+                    return Ok(cached_key.clone());
+                }
             }
         }
 
@@ -98,11 +99,12 @@ impl BLSVerifier {
 
         // Cache it
         {
-            let mut cache = self.point_cache.write().unwrap();
-            if cache.len() >= MAX_POINT_CACHE_SIZE {
-                cache.clear();
+            if let Ok(mut cache) = self.point_cache.write() {
+                if cache.len() >= MAX_POINT_CACHE_SIZE {
+                    cache.clear();
+                }
+                cache.insert(pub_key_bytes.to_vec(), pub_key);
             }
-            cache.insert(pub_key_bytes.to_vec(), pub_key);
         }
 
         Ok(pub_key)
