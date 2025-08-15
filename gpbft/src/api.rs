@@ -5,10 +5,10 @@ use crate::PubKey;
 use std::fmt::Display;
 
 /// Verifier trait for signature verification in the GPBFT consensus protocol
-pub trait Verifier {
+pub trait Verifier: Send + Sync {
     /// Error type. Once there is a concrete implementation of the `Verifier` trait,
     /// this might just be a concrete error type.
-    type Error: Display;
+    type Error: std::error::Error + Send + Sync;
     /// Verifies a signature for the given public key
     ///
     /// This method must be safe for concurrent use.
