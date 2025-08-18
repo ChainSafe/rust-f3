@@ -23,7 +23,7 @@ jobs:
     name: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
         timeout-minutes: 5
@@ -37,7 +37,7 @@ jobs:
     name: All lint checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
         timeout-minutes: 5
@@ -57,7 +57,7 @@ jobs:
     name: Check cargo dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -69,7 +69,7 @@ jobs:
   codedov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
