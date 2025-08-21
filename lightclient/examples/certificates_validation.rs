@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! # Example: F3 certificates validation
 //!
 //! Demonstrates how to validate Filecoin F3 finality certificates

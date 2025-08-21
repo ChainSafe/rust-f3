@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! Merkle tree implementation matching go-f3's merkle package
 //!
 //! This implements the same merkle tree algorithm used by go-f3 for ECChain key generation.

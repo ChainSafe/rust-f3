@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 mod rpc_to_internal;
 
 extern crate core;

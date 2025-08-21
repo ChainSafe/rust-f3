@@ -13,12 +13,8 @@ ahash.workspace = true
 bls-signatures.workspace = true
 bls12_381.workspace = true
 filecoin-f3-gpbft = { path = "../gpbft" }
-keccak-hash.workspace = true
 parking_lot.workspace = true
-serde.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-hex.workspace = true
 rand.workspace = true
-sha2.workspace = true

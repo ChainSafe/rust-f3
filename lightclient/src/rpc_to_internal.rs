@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::Context;
 use base64::{Engine as _, engine::general_purpose};
 use filecoin_f3_certs as certs;

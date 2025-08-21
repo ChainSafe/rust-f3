@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use super::BLSVerifier;
 use bls_signatures::{PrivateKey, Serialize};
 use filecoin_f3_gpbft::PubKey;

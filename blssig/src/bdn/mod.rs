@@ -1,3 +1,6 @@
+// Copyright 2019-2024 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 //! BDN (Boneh-Drijvers-Neven) signature aggregation scheme, for preventing rogue public-key attacks.
 //!
 //! NOTE: currently uses standard BLS aggregation without coefficient weighting, hence returns incorrect values compared to go-f3.
