@@ -492,6 +492,11 @@ mod tests {
 
         let ec_chain = ECChain::new(base_tipset, vec![additional_tipset]).unwrap();
 
+        // Create signers bitfield with participants 1 and 2 (from our test power table)
+        let mut signers = BitField::new();
+        signers.set(0);
+        signers.set(1);
+
         Justification {
             vote: Payload {
                 instance: 1,
@@ -503,7 +508,7 @@ mod tests {
                 },
                 value: ec_chain,
             },
-            signers: BitField::new(),
+            signers,
             signature: vec![7, 8, 9],
         }
     }
@@ -702,7 +707,7 @@ mod tests {
             msg: &[u8],
             sig: &[u8],
         ) -> std::result::Result<(), Self::Error> {
-            todo!()
+            Ok(())
         }
 
         fn aggregate(
@@ -710,7 +715,7 @@ mod tests {
             pub_keys: &[PubKey],
             sigs: &[Vec<u8>],
         ) -> std::result::Result<Vec<u8>, Self::Error> {
-            todo!()
+            Ok(vec![])
         }
 
         fn verify_aggregate(
@@ -719,7 +724,7 @@ mod tests {
             agg_sig: &[u8],
             signers: &[PubKey],
         ) -> std::result::Result<(), Self::Error> {
-            todo!()
+            Ok(())
         }
     }
 
@@ -743,7 +748,7 @@ mod tests {
             let power_delta = PowerTableDiff::new();
             let mut justification = create_mock_justification(
                 Phase::Decide,
-                "bafy2bzacecqu3blsvc67mqnva7qlfqlmm3euqtq7fn272smgyaa4ev7dnbxru",
+                "bafy2bzacearmjx2rxwdc6qkvowushj5nlkdkxmvop2ljojts2znfozxguafmg",
             );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
@@ -808,12 +813,24 @@ mod tests {
 
     #[test]
     fn test_validate_finality_certificates_non_consecutive() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
         let mut certs = Vec::new();
         for i in [1, 3, 4] {
             let power_delta = PowerTableDiff::new();
             let mut justification = create_mock_justification(
                 Phase::Decide,
-                "bafy2bzacebc3bt6cedhoyw34drrmjvazhu4oj25er2ebk4u445pzycvq4ta4a",
+                "bafy2bzacearmjx2rxwdc6qkvowushj5nlkdkxmvop2ljojts2znfozxguafmg",
             );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
@@ -823,7 +840,7 @@ mod tests {
         let result = validate_finality_certificates(
             &MockVerifier,
             &"test_network".to_string(),
-            PowerEntries(Vec::new()),
+            PowerEntries(initial_power_table),
             1,
             None,
             &certs,

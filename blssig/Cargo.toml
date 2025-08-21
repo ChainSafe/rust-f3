@@ -9,14 +9,16 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+ahash.workspace = true
 bls-signatures.workspace = true
 bls12_381.workspace = true
-thiserror.workspace = true
-keccak-hash.workspace = true
-serde.workspace = true
 filecoin-f3-gpbft = { path = "../gpbft" }
+keccak-hash.workspace = true
+parking_lot.workspace = true
+serde.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
+hex.workspace = true
 rand.workspace = true
 sha2.workspace = true
-hex.workspace = true

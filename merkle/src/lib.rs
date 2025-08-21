@@ -40,14 +40,18 @@ fn calculate_depth(length: usize) -> usize {
 }
 
 /// Recursive function to build the merkle tree
-fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> anyhow::Result<MerkleDigest> {
+fn build_tree(
+    depth: usize,
+    values: &[Vec<u8>],
+    hasher: &mut Keccak256,
+) -> anyhow::Result<MerkleDigest> {
     if values.is_empty() {
         return Ok(ZERO_DIGEST);
     }
 
     if depth == 0 {
         if values.len() != 1 {
-            return Err(anyhow!("expected one value at the leaf"))
+            return Err(anyhow!("expected one value at the leaf"));
         }
         // Leaf node: hash(0x01 || value)
         hasher.update(LEAF_MARKER);
@@ -65,8 +69,8 @@ fn build_tree(depth: usize, values: &[Vec<u8>], hasher: &mut Keccak256) -> anyho
 
         // Internal node: hash(0x00 || left || right)
         hasher.update(INTERNAL_MARKER);
-        hasher.update(&left_hash);
-        hasher.update(&right_hash);
+        hasher.update(left_hash);
+        hasher.update(right_hash);
         let result = hasher.finalize_reset();
         let mut digest = [0u8; 32];
         digest.copy_from_slice(&result);

@@ -16,6 +16,7 @@ use filecoin_f3_gpbft::PowerEntries;
 use filecoin_f3_gpbft::powertable::{is_strong_quorum, signer_scaled_total};
 use filecoin_f3_lightclient::LightClient;
 use std::env;
+use std::fmt::Write;
 
 struct NetworkConfig {
     network_name: &'static str,
@@ -146,5 +147,8 @@ fn get_network_config() -> Result<&'static NetworkConfig> {
 }
 
 fn to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    bytes.iter().fold(String::new(), |mut output, b| {
+        let _ = write!(output, "{:02x}", b);
+        output
+    })
 }

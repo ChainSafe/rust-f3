@@ -29,7 +29,7 @@ pub fn convert_certificate(
         power_table_delta: val
             .power_table_delta
             .into_iter()
-            .map(|delta| convert_power_table_delta(delta))
+            .map(convert_power_table_delta)
             .collect::<anyhow::Result<Vec<_>, _>>()?,
         signers: convert_bitfield(val.signers)?,
         signature: general_purpose::STANDARD.decode(&val.signature)?, // base64 -> bytes

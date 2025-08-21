@@ -9,25 +9,25 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-filecoin-f3-merkle = { path = "../merkle" }
 ahash = { workspace = true }
+anyhow = { workspace = true }
 base32 = { workspace = true }
 cid = { workspace = true }
+filecoin-f3-merkle = { path = "../merkle" }
 fvm_ipld_bitfield = { workspace = true }
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
 num-bigint = { workspace = true }
 num-traits = { workspace = true }
-serde_cbor = { workspace = true }
 serde = { workspace = true }
+serde_cbor = { workspace = true }
 strum_macros = { workspace = true }
 thiserror = { workspace = true }
-anyhow = { workspace = true }
 
 [dev-dependencies]
+base64 = { workspace = true }
 hex = { workspace = true }
 serde_json = { workspace = true }
-base64 = { workspace = true }
 
 [target.'cfg(target_family="wasm")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

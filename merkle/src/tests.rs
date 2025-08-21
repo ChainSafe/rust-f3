@@ -41,14 +41,14 @@ fn test_hash_tree_golden() {
     ];
 
     let n = 16;
-    for i in 0..n {
+    for (i, expected) in expected_hex.iter().enumerate().take(n) {
         let inputs = generate_inputs("golden", i + 1);
         let res = tree(&inputs).unwrap();
         let res_hex = hex::encode(res);
         assert_eq!(
-            expected_hex[i], res_hex,
+            *expected, res_hex,
             "mismatch at index {}: expected {}, got {}",
-            i, expected_hex[i], res_hex
+            i, expected, res_hex
         );
     }
 }

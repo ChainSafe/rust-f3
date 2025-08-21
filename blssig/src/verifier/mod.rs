@@ -1,8 +1,8 @@
+use ahash::{HashMap, HashMapExt};
 use bls_signatures::{PublicKey, Serialize, Signature, verify_messages};
 use filecoin_f3_gpbft::PubKey;
 use filecoin_f3_gpbft::api::Verifier;
-use std::collections::HashMap;
-use std::sync::RwLock;
+use parking_lot::RwLock;
 use thiserror::Error;
 
 use crate::bdn::BDNAggregation;
@@ -86,10 +86,9 @@ impl BLSVerifier {
     fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
         {
-            if let Ok(cache) = self.point_cache.read() {
-                if let Some(cached_key) = cache.get(pub_key_bytes) {
-                    return Ok(cached_key.clone());
-                }
+            let cache = self.point_cache.read();
+            if let Some(cached_key) = cache.get(pub_key_bytes) {
+                return Ok(*cached_key);
             }
         }
 
@@ -99,12 +98,11 @@ impl BLSVerifier {
 
         // Cache it
         {
-            if let Ok(mut cache) = self.point_cache.write() {
-                if cache.len() >= MAX_POINT_CACHE_SIZE {
-                    cache.clear();
-                }
-                cache.insert(pub_key_bytes.to_vec(), pub_key);
+            let mut cache = self.point_cache.write();
+            if cache.len() >= MAX_POINT_CACHE_SIZE {
+                cache.clear();
             }
+            cache.insert(pub_key_bytes.to_vec(), pub_key);
         }
 
         Ok(pub_key)
