@@ -1,0 +1,18 @@
+[package]
+name = "filecoin-f3-rpc"
+version = "0.1.0"
+
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+
+[dependencies]
+filecoin-f3-gpbft = { path = "../gpbft" }
+
+anyhow.workspace = true
+jsonrpsee.workspace = true
+num-bigint = { workspace = true }
+serde.workspace = true
+
+[dev-dependencies]

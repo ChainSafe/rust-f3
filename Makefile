@@ -1,8 +1,8 @@
 check:
 	cargo check --quiet --no-default-features 
 	cargo check --quiet --all-features
-	cargo check --quiet --no-default-features --target wasm32-unknown-unknown
-	cargo check --quiet --all-features --target wasm32-unknown-unknown
+	cargo check --quiet --no-default-features --target wasm32-unknown-unknown -p filecoin-f3-certs -p filecoin-f3-blssig -p filecoin-f3-merkle -p filecoin-f3-gpbft
+	cargo check --quiet --all-features --target wasm32-unknown-unknown -p filecoin-f3-certs -p filecoin-f3-blssig -p filecoin-f3-merkle -p filecoin-f3-gpbft
 
 test:
 	cargo test --all-features
@@ -36,7 +36,7 @@ fmt:
 
 clippy:
 	cargo clippy --all-targets --all-features --quiet --no-deps -- --deny=warnings
-	cargo clippy --all-features --target wasm32-unknown-unknown --quiet --no-deps -- --deny=warnings
+	cargo clippy --all-features --target wasm32-unknown-unknown --quiet --no-deps -p filecoin-f3-certs -p filecoin-f3-blssig -p filecoin-f3-merkle -p filecoin-f3-gpbft -- --deny=warnings
 
 # Checks if all headers are present and adds if not
 license:

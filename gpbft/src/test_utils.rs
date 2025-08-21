@@ -25,6 +25,6 @@ pub fn create_powertable() -> PowerEntries {
 
 pub fn powertable_cid() -> Cid {
     let powertable = create_powertable();
-    let cbor = fvm_ipld_encoding::to_vec(&powertable).unwrap();
+    let cbor = powertable.serialize_cbor();
     cid_from_bytes(&cbor)
 }
