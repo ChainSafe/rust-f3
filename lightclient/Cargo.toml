@@ -14,5 +14,6 @@ filecoin-f3-rpc = { path = "../rpc" }
 
 anyhow.workspace = true
 base64 = { workspace = true }
+hex.workspace = true
 keccak-hash.workspace = true
 tokio.workspace = true
