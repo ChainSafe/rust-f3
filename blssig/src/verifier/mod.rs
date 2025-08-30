@@ -94,25 +94,23 @@ impl BLSVerifier {
     /// Gets a cached public key or deserializes and caches it
     fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
-        {
-            let cache = self.point_cache.read();
-            if let Some(cached_key) = cache.get(pub_key_bytes) {
-                return Ok(*cached_key);
-            }
+        let cache = self.point_cache.read();
+        if let Some(cached_key) = cache.get(pub_key_bytes) {
+            return Ok(*cached_key);
         }
+        drop(cache);
 
         // Deserialize the public key
         let pub_key =
             PublicKey::from_bytes(pub_key_bytes).map_err(|_| BLSError::PublicKeyDeserialization)?;
 
         // Cache it
-        {
-            let mut cache = self.point_cache.write();
-            if cache.len() >= MAX_POINT_CACHE_SIZE {
-                cache.clear();
-            }
-            cache.insert(pub_key_bytes.to_vec(), pub_key);
+        let mut cache = self.point_cache.write();
+        if cache.len() >= MAX_POINT_CACHE_SIZE {
+            cache.clear();
         }
+        cache.insert(pub_key_bytes.to_vec(), pub_key);
+        drop(cache);
 
         Ok(pub_key)
     }
