@@ -341,7 +341,6 @@ fn verify_signature(
 /// Returns a `CertsError` if any validation step fails, including instance mismatches,
 /// invalid certificates, power table inconsistencies, or serialization errors.
 ///
-#[allow(unused)]
 pub fn validate_finality_certificates<'a>(
     verifier: &impl Verifier,
     network: &NetworkName,
