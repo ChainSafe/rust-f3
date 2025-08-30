@@ -17,11 +17,11 @@ mod tests;
 pub enum BLSError {
     #[error("empty public keys provided")]
     EmptyPublicKeys,
-    #[error("invalid public key length: expected 48 bytes, got {0}")]
+    #[error("invalid public key length: expected {BLS_PUBLIC_KEY_LENGTH} bytes, got {0}")]
     InvalidPublicKeyLength(usize),
     #[error("failed to deserialize public key")]
     PublicKeyDeserialization,
-    #[error("invalid signature length: expected 96 bytes, got {0}")]
+    #[error("invalid signature length: expected {BLS_SIGNATURE_LENGTH} bytes, got {0}")]
     InvalidSignatureLength(usize),
     #[error("failed to deserialize signature")]
     SignatureDeserialization,
@@ -49,6 +49,12 @@ impl Default for BLSVerifier {
     }
 }
 
+/// BLS12-381 public key length in bytes
+const BLS_PUBLIC_KEY_LENGTH: usize = 48;
+
+/// BLS12-381 signature length in bytes
+const BLS_SIGNATURE_LENGTH: usize = 96;
+
 /// Maximum number of cached public key points to prevent excessive memory usage
 const MAX_POINT_CACHE_SIZE: usize = 10_000;
 
@@ -62,10 +68,10 @@ impl BLSVerifier {
     /// Verifies a single BLS signature
     fn verify_single(&self, pub_key: &PubKey, msg: &[u8], sig: &[u8]) -> Result<(), BLSError> {
         // Validate input lengths
-        if pub_key.0.len() != 48 {
+        if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
             return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
         }
-        if sig.len() != 96 {
+        if sig.len() != BLS_SIGNATURE_LENGTH {
             return Err(BLSError::InvalidSignatureLength(sig.len()));
         }
 
@@ -132,10 +138,10 @@ impl Verifier for BLSVerifier {
 
         // Validate all input lengths
         for (i, pub_key) in pub_keys.iter().enumerate() {
-            if pub_key.0.len() != 48 {
+            if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
                 return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
             }
-            if sigs[i].len() != 96 {
+            if sigs[i].len() != BLS_SIGNATURE_LENGTH {
                 return Err(BLSError::InvalidSignatureLength(sigs[i].len()));
             }
         }
@@ -155,7 +161,7 @@ impl Verifier for BLSVerifier {
         }
 
         for pub_key in signers {
-            if pub_key.0.len() != 48 {
+            if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
                 return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
             }
         }
