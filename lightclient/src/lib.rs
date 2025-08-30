@@ -5,16 +5,16 @@ mod rpc_to_internal;
 
 extern crate core;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use filecoin_f3_blssig::BLSVerifier;
 use filecoin_f3_certs as certs;
 use filecoin_f3_certs::validate_finality_certificates;
-use filecoin_f3_gpbft::{ECChain, PowerEntries};
+use filecoin_f3_gpbft::{ECChain, NetworkName, PowerEntries};
 use filecoin_f3_rpc::RPCClient;
 
 pub struct LightClient {
     rpc: RPCClient,
-    network_name: String,
+    network: NetworkName,
     verifier: BLSVerifier,
 }
 
@@ -29,7 +29,7 @@ impl LightClient {
     pub fn new(endpoint: &str, network_name: &str) -> Result<Self> {
         Ok(Self {
             rpc: RPCClient::new(endpoint)?,
-            network_name: network_name.to_string(),
+            network: network_name.to_string().parse().context("network_name")?,
             verifier: BLSVerifier::new(),
         })
     }
@@ -60,7 +60,7 @@ impl LightClient {
     ) -> certs::Result<LightClientState> {
         let (new_instance, new_chain, new_power_table) = validate_finality_certificates(
             &self.verifier,
-            &self.network_name,
+            &self.network,
             state.power_table.clone(),
             state.instance,
             state.chain.as_ref().and_then(|c| c.last()),

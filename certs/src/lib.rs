@@ -291,7 +291,7 @@ fn verify_signature(
     };
 
     // Encode the payload for signing
-    let payload_bytes = payload.serialize_for_signing(network);
+    let payload_bytes = payload.serialize_for_signing(&network.to_string());
 
     // Extract public keys for signers
     let signers_pk: Vec<PubKey> = signers
