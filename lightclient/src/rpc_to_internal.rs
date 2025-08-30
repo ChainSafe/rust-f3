@@ -1,7 +1,7 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use anyhow::Context;
+use anyhow::{ensure, Context};
 use base64::{Engine as _, engine::general_purpose};
 use filecoin_f3_certs as certs;
 use filecoin_f3_gpbft::chain;
@@ -40,9 +40,7 @@ pub fn convert_certificate(
 }
 
 fn convert_chain(val: Vec<rpc::ECTipSet>) -> anyhow::Result<ECChain> {
-    if val.is_empty() {
-        return Err(anyhow::anyhow!("empty ec_chain"));
-    }
+    ensure!(!val.is_empty(), "empty ec_chain");
 
     let tipsets = val
         .into_iter()
