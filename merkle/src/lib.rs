@@ -12,11 +12,14 @@ mod tests;
 use anyhow::anyhow;
 use sha3::{Digest, Keccak256};
 
-/// 32-byte digest matching go-f3's merkle.Digest
-pub type MerkleDigest = [u8; 32];
+/// Size of merkle digest in bytes
+pub const MERKLE_DIGEST_SIZE: usize = 32;
 
-/// Zero digest (32 zero bytes)
-pub const ZERO_DIGEST: MerkleDigest = [0u8; 32];
+/// Digest matching go-f3's merkle.Digest
+pub type MerkleDigest = [u8; MERKLE_DIGEST_SIZE];
+
+/// Zero digest
+pub const ZERO_DIGEST: MerkleDigest = [0u8; MERKLE_DIGEST_SIZE];
 
 /// Markers used in go-f3's merkle implementation
 const INTERNAL_MARKER: &[u8] = &[0x00];
@@ -60,7 +63,7 @@ fn build_tree(
         hasher.update(LEAF_MARKER);
         hasher.update(&values[0]);
         let result = hasher.finalize_reset();
-        let mut digest = [0u8; 32];
+        let mut digest = [0u8; MERKLE_DIGEST_SIZE];
         digest.copy_from_slice(&result);
         Ok(digest)
     } else {
@@ -75,7 +78,7 @@ fn build_tree(
         hasher.update(left_hash);
         hasher.update(right_hash);
         let result = hasher.finalize_reset();
-        let mut digest = [0u8; 32];
+        let mut digest = [0u8; MERKLE_DIGEST_SIZE];
         digest.copy_from_slice(&result);
         Ok(digest)
     }
