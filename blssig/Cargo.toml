@@ -13,6 +13,7 @@ ahash.workspace = true
 bls-signatures.workspace = true
 bls12_381.workspace = true
 filecoin-f3-gpbft = { path = "../gpbft" }
+hashlink.workspace = true
 parking_lot.workspace = true
 thiserror.workspace = true
 

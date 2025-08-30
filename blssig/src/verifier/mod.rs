@@ -1,10 +1,10 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use ahash::{HashMap, HashMapExt};
 use bls_signatures::{PublicKey, Serialize, Signature, verify_messages};
 use filecoin_f3_gpbft::PubKey;
 use filecoin_f3_gpbft::api::Verifier;
+use hashlink::LruCache;
 use parking_lot::RwLock;
 use thiserror::Error;
 
@@ -40,7 +40,7 @@ pub enum BLSError {
 /// - Point cache for performance optimization
 pub struct BLSVerifier {
     /// Cache for deserialized public key points to avoid expensive repeated operations
-    point_cache: RwLock<HashMap<Vec<u8>, PublicKey>>,
+    point_cache: RwLock<LruCache<Vec<u8>, PublicKey>>,
 }
 
 impl Default for BLSVerifier {
@@ -61,7 +61,7 @@ const MAX_POINT_CACHE_SIZE: usize = 10_000;
 impl BLSVerifier {
     pub fn new() -> Self {
         Self {
-            point_cache: RwLock::new(HashMap::new()),
+            point_cache: RwLock::new(LruCache::new(MAX_POINT_CACHE_SIZE)),
         }
     }
 
@@ -94,7 +94,7 @@ impl BLSVerifier {
     /// Gets a cached public key or deserializes and caches it
     fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
-        let cache = self.point_cache.read();
+        let mut cache = self.point_cache.write();
         if let Some(cached_key) = cache.get(pub_key_bytes) {
             return Ok(*cached_key);
         }
@@ -106,9 +106,6 @@ impl BLSVerifier {
 
         // Cache it
         let mut cache = self.point_cache.write();
-        if cache.len() >= MAX_POINT_CACHE_SIZE {
-            cache.clear();
-        }
         cache.insert(pub_key_bytes.to_vec(), pub_key);
         drop(cache);
 
