@@ -262,7 +262,7 @@ pub fn make_power_table_diff(
 /// Verifies the signature of a finality certificate
 fn verify_signature(
     verifier: &impl Verifier,
-    network: &NetworkName,
+    network: NetworkName,
     cert: &FinalityCertificate,
     power_table: &PowerEntries,
 ) -> Result<()> {
@@ -343,7 +343,7 @@ fn verify_signature(
 ///
 pub fn validate_finality_certificates<'a>(
     verifier: &impl Verifier,
-    network: &NetworkName,
+    network: NetworkName,
     prev_power_table: PowerEntries,
     mut next_instance: u64,
     mut base: Option<&'a Tipset>,
@@ -756,7 +756,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table.clone()),
             1,
             None,
@@ -798,7 +798,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table.clone()),
             1,
             Some(&base_tipset),
@@ -838,7 +838,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             None,
@@ -865,7 +865,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(Vec::new()),
             1,
             Some(&mismatched_base),
@@ -910,7 +910,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),
@@ -950,7 +950,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             0,
             Some(&base_tipset),
@@ -999,7 +999,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),
@@ -1036,7 +1036,7 @@ mod tests {
 
         let result = validate_finality_certificates(
             &MockVerifier,
-            &"test_network".to_string(),
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),

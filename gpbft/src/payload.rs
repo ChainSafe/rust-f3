@@ -46,7 +46,7 @@ impl Payload {
     }
 
     /// Serializes the payload for signing.
-    /// Format: "GPBFT:network_name:phase+round+instance+commitments+chain_key+power_table_cid"
+    /// Format: `GPBFT:network_name:phase+round+instance+commitments+chain_key+power_table_cid`
     pub fn serialize_for_signing(&self, network_name: &str) -> Vec<u8> {
         // Domain separation constants
         const DOMAIN_SEPARATION_TAG: &str = "GPBFT";
@@ -190,7 +190,7 @@ mod tests {
         assert_eq!(format!("{}", Phase::Terminated), "TERMINATED");
     }
 
-    /// Clone of TestPayloadMarshalForSigning from go-f3/gpbft/signature_test.go
+    /// Clone of `TestPayloadMarshalForSigning` from `go-f3/gpbft/signature_test.go`
     /// with active test vectors, to ensure correctness.
     #[test]
     fn test_payload_serialize_for_signing() {

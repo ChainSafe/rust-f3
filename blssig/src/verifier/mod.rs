@@ -33,7 +33,7 @@ pub enum BLSError {
 
 /// BLS signature verifier using BDN aggregation scheme
 ///
-/// This verifier implements the same scheme used by go-f3/blssig, with:
+/// This verifier implements the same scheme used by `go-f3/blssig`, with:
 /// - BLS12_381 curve
 /// - G1 for public keys, G2 for signatures  
 /// - BDN aggregation for rogue-key attack prevention
@@ -91,7 +91,7 @@ impl BLSVerifier {
         }
     }
 
-    /// Gets a cached public key or deserializes and caches it
+    /// Gets a cached public key or deserialize and caches it
     fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
         let mut cache = self.point_cache.write();

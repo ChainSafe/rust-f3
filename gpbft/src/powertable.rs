@@ -275,7 +275,7 @@ mod tests {
         PowerEntries(entries)
     }
 
-    /// Loads powertable expected CID from manifest file
+    /// Loads power table expected CID from manifest file
     fn load_cid_from_manifest(path: &str) -> String {
         use serde_json::Value;
         use std::fs;

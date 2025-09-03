@@ -77,10 +77,10 @@ impl Tipset {
 
     /// Serializes for signing
     /// Returns bytes in this exact order:
-    /// 1. epoch (8 bytes, big-endian)
-    /// 2. commitments (32 bytes)  
-    /// 3. tipset_cid
-    /// 4. power_table_cid
+    /// 1. `epoch` (8 bytes, big-endian)
+    /// 2. `commitments` (32 bytes)
+    /// 3. `tipset_cid`
+    /// 4. `power_table_cid`
     pub fn serialize_for_signing(&self) -> Vec<u8> {
         // CBOR-encode the tipset key using serde_cbor to match go-f3's cbg.WriteByteArray
         use serde_cbor::Value;
@@ -517,7 +517,7 @@ mod tests {
         assert_eq!(cid.hash().digest(), expected_hash.digest());
     }
 
-    /// Clone of TestTipSetMarshalForSigning from go-f3/gpbft/signature_test.go
+    /// Clone of `TestTipSetMarshalForSigning` from `go-f3/gpbft/signature_test.go`
     /// with active test vectors, to ensure correctness.
     #[test]
     fn test_tipset_serialize_for_signing() {

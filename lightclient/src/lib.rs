@@ -60,7 +60,7 @@ impl LightClient {
     ) -> certs::Result<LightClientState> {
         let (new_instance, new_chain, new_power_table) = validate_finality_certificates(
             &self.verifier,
-            &self.network,
+            self.network,
             state.power_table.clone(),
             state.instance,
             state.chain.as_ref().and_then(|c| c.last()),

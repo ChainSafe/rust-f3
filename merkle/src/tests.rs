@@ -3,7 +3,7 @@
 
 use super::*;
 
-/// Helper function to generate test inputs matching go-f3's generateInputs
+/// Helper function to generate test inputs matching go-f3's `generateInputs`
 fn generate_inputs(dst: &str, n: usize) -> Vec<Vec<u8>> {
     let mut res = Vec::new();
     for i in 0..n {
@@ -12,7 +12,7 @@ fn generate_inputs(dst: &str, n: usize) -> Vec<Vec<u8>> {
     res
 }
 
-/// Clone of TestHashZero from go-f3/merkle/merkle_test.go
+/// Clone of `TestHashZero` from `go-f3/merkle/merkle_test.go`
 #[test]
 fn test_hash_zero() {
     let test: &[Vec<u8>] = &[];
@@ -20,7 +20,7 @@ fn test_hash_zero() {
     assert_eq!(root, ZERO_DIGEST);
 }
 
-/// Clone of TestHashTreeGolden from go-f3/merkle/merkle_test.go
+/// Clone of `TestHashTreeGolden` from `go-f3/merkle/merkle_test.go`
 /// with active test vectors, to ensure correctness.
 #[test]
 fn test_hash_tree_golden() {

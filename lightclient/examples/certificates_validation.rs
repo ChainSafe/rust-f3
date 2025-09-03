@@ -18,7 +18,6 @@ use anyhow::Result;
 use filecoin_f3_gpbft::PowerEntries;
 use filecoin_f3_gpbft::powertable::{is_strong_quorum, signer_scaled_total};
 use filecoin_f3_lightclient::LightClient;
-use hex;
 use std::env;
 
 struct NetworkConfig {
@@ -106,7 +105,10 @@ async fn main() -> Result<()> {
                 println!("new power table size: {}", new_state.power_table.len());
                 let chain_last = new_state.chain.as_ref().unwrap().last().unwrap();
                 println!("new chain last tipset epoch: {}", chain_last.epoch);
-                println!("new chain last tipset key: {}", hex::encode(&chain_last.key));
+                println!(
+                    "new chain last tipset key: {}",
+                    hex::encode(&chain_last.key)
+                );
                 println!(
                     "new chain last tipset commitments hash: {}",
                     chain_last.commitments
