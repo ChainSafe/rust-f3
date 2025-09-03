@@ -9,7 +9,6 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-ahash.workspace = true
 bls-signatures.workspace = true
 bls12_381.workspace = true
 filecoin-f3-gpbft = { path = "../gpbft" }
