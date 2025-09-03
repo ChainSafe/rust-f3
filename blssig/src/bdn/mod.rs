@@ -27,7 +27,7 @@ impl BDNAggregation {
     }
 
     /// Aggregates signatures using standard BLS aggregation
-    /// TODO: Implement proper BDN coefficient weighting
+    /// TODO: Implement BDN aggregation scheme: https://github.com/ChainSafe/rust-f3/issues/29
     pub fn aggregate_sigs(&self, sigs: &[Vec<u8>]) -> Result<Vec<u8>, BLSError> {
         if sigs.len() != self.pub_keys.len() {
             return Err(BLSError::LengthMismatch {
@@ -54,7 +54,7 @@ impl BDNAggregation {
     }
 
     /// Aggregates public keys using standard BLS aggregation
-    /// TODO: Implement proper BDN coefficient weighting
+    /// TODO: Implement BDN aggregation scheme: https://github.com/ChainSafe/rust-f3/issues/29
     pub fn aggregate_pub_keys(&self) -> Result<PublicKey, BLSError> {
         let mut aggregated_point = G1Projective::identity();
 

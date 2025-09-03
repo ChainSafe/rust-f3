@@ -310,7 +310,7 @@ fn verify_signature(
     // Temporarily silencing verification errors
     // The current BDN implementation uses standard BLS aggregation, causing verification to fail.
     // This logging allows development to continue.
-    // TODO: Remove this workaround once BDN is implemented
+    // TODO: Remove this workaround once BDN aggregation scheme is implemented
     if let Err(err) = res {
         println!("WARN: {}", err);
     }
