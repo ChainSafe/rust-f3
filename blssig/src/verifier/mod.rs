@@ -101,7 +101,9 @@ impl BLSVerifier {
 
         // Deserialize and cache
         let typed_pub_key = self.deserialize_public_key(pub_key)?;
-        self.point_cache.write().insert(pub_key.to_vec(), typed_pub_key);
+        self.point_cache
+            .write()
+            .insert(pub_key.to_vec(), typed_pub_key);
         Ok(typed_pub_key)
     }
 

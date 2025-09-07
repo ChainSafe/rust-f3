@@ -20,9 +20,7 @@ impl BDNAggregation {
             return Err(BLSError::EmptyPublicKeys);
         }
 
-        Ok(Self {
-            pub_keys,
-        })
+        Ok(Self { pub_keys })
     }
 
     /// Aggregates signatures using standard BLS aggregation
