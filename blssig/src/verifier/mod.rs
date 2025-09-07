@@ -37,7 +37,6 @@ pub enum BLSError {
 /// - BLS12_381 curve
 /// - G1 for public keys, G2 for signatures  
 /// - BDN aggregation for rogue-key attack prevention
-/// - Point cache for performance optimization
 pub struct BLSVerifier {
     /// Cache for deserialized public key points to avoid expensive repeated operations
     point_cache: RwLock<LruCache<Vec<u8>, PublicKey>>,
@@ -79,8 +78,7 @@ impl BLSVerifier {
         let pub_key = self.get_or_cache_public_key(&pub_key.0)?;
 
         // Deserialize signature
-        let signature =
-            Signature::from_bytes(sig).map_err(|_| BLSError::SignatureDeserialization)?;
+        let signature = self.deserialize_signature(sig)?;
 
         // Verify using bls-signatures
         let msgs = [msg];
@@ -92,24 +90,31 @@ impl BLSVerifier {
     }
 
     /// Gets a cached public key or deserialize and caches it
-    fn get_or_cache_public_key(&self, pub_key_bytes: &[u8]) -> Result<PublicKey, BLSError> {
+    fn get_or_cache_public_key(&self, pub_key: &[u8]) -> Result<PublicKey, BLSError> {
         // Check cache first
         let mut cache = self.point_cache.write();
-        if let Some(cached_key) = cache.get(pub_key_bytes) {
+        if let Some(cached_key) = cache.get(pub_key) {
             return Ok(*cached_key);
         }
         drop(cache);
 
         // Deserialize the public key
-        let pub_key =
-            PublicKey::from_bytes(pub_key_bytes).map_err(|_| BLSError::PublicKeyDeserialization)?;
+        let typed_pub_key = self.deserialize_public_key(pub_key)?;
 
         // Cache it
         let mut cache = self.point_cache.write();
-        cache.insert(pub_key_bytes.to_vec(), pub_key);
+        cache.insert(pub_key.to_vec(), typed_pub_key);
         drop(cache);
 
-        Ok(pub_key)
+        Ok(typed_pub_key)
+    }
+
+    fn deserialize_public_key(&self, pub_key: &[u8]) -> Result<PublicKey, BLSError> {
+        PublicKey::from_bytes(pub_key).map_err(|_| BLSError::PublicKeyDeserialization)
+    }
+
+    fn deserialize_signature(&self, sig: &[u8]) -> Result<Signature, BLSError> {
+        Signature::from_bytes(sig).map_err(|_| BLSError::SignatureDeserialization)
     }
 }
 
@@ -132,6 +137,8 @@ impl Verifier for BLSVerifier {
         }
 
         // Validate all input lengths
+        let mut typed_pub_keys = vec![];
+        let mut typed_sigs = vec![];
         for (i, pub_key) in pub_keys.iter().enumerate() {
             if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
                 return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
@@ -139,10 +146,14 @@ impl Verifier for BLSVerifier {
             if sigs[i].len() != BLS_SIGNATURE_LENGTH {
                 return Err(BLSError::InvalidSignatureLength(sigs[i].len()));
             }
+
+            typed_pub_keys.push(self.get_or_cache_public_key(&pub_key.0)?);
+            typed_sigs.push(self.deserialize_signature(&sigs[i])?);
         }
 
-        let bdn = BDNAggregation::new(pub_keys)?;
-        bdn.aggregate_sigs(sigs)
+        let bdn = BDNAggregation::new(&typed_pub_keys)?;
+        let agg_sig = bdn.aggregate_sigs(&typed_sigs)?;
+        Ok(agg_sig.as_bytes())
     }
 
     fn verify_aggregate(
@@ -155,13 +166,16 @@ impl Verifier for BLSVerifier {
             return Err(BLSError::EmptyPublicKeys);
         }
 
+        let mut typed_pub_keys = vec![];
         for pub_key in signers {
             if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
                 return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
             }
+
+            typed_pub_keys.push(self.get_or_cache_public_key(&pub_key.0)?);
         }
 
-        let bdn = BDNAggregation::new(signers)?;
+        let bdn = BDNAggregation::new(&typed_pub_keys)?;
         let agg_pub_key = bdn.aggregate_pub_keys()?;
         let agg_pub_key_bytes = PubKey(agg_pub_key.as_bytes().to_vec());
         self.verify_single(&agg_pub_key_bytes, payload, agg_sig)
