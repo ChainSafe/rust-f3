@@ -17,6 +17,8 @@ mod tests;
 pub enum BLSError {
     #[error("empty public keys provided")]
     EmptyPublicKeys,
+    #[error("empty signatures provided")]
+    EmptySignatures,
     #[error("invalid public key length: expected {BLS_PUBLIC_KEY_LENGTH} bytes, got {0}")]
     InvalidPublicKeyLength(usize),
     #[error("failed to deserialize public key")]
@@ -126,9 +128,13 @@ impl Verifier for BLSVerifier {
     }
 
     fn aggregate(&self, pub_keys: &[PubKey], sigs: &[Vec<u8>]) -> Result<Vec<u8>, Self::Error> {
-        if pub_keys.is_empty() || sigs.is_empty() {
+        if pub_keys.is_empty() {
             return Err(BLSError::EmptyPublicKeys);
         }
+        if sigs.is_empty() {
+            return Err(BLSError::EmptySignatures);
+        }
+
         if pub_keys.len() != sigs.len() {
             return Err(BLSError::LengthMismatch {
                 pub_keys: pub_keys.len(),
