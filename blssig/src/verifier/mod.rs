@@ -83,9 +83,9 @@ impl BLSVerifier {
             Signature::from_bytes(sig).map_err(|_| BLSError::SignatureDeserialization)?;
 
         // Verify using bls-signatures
-        let messages = vec![msg];
-        let public_keys = vec![pub_key];
-        match verify_messages(&signature, &messages, &public_keys) {
+        let msgs = [msg];
+        let pub_keys = [pub_key];
+        match verify_messages(&signature, &msgs, &pub_keys) {
             true => Ok(()),
             false => Err(BLSError::SignatureVerificationFailed),
         }
