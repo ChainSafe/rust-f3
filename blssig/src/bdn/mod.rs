@@ -15,19 +15,19 @@ pub struct BDNAggregation {
 }
 
 impl BDNAggregation {
-    pub fn new(pub_keys: &[PublicKey]) -> Result<Self, BLSError> {
+    pub fn new(pub_keys: Vec<PublicKey>) -> Result<Self, BLSError> {
         if pub_keys.is_empty() {
             return Err(BLSError::EmptyPublicKeys);
         }
 
         Ok(Self {
-            pub_keys: pub_keys.to_vec(),
+            pub_keys,
         })
     }
 
     /// Aggregates signatures using standard BLS aggregation
     /// TODO: Implement BDN aggregation scheme: https://github.com/ChainSafe/rust-f3/issues/29
-    pub fn aggregate_sigs(&self, sigs: &[Signature]) -> Result<Signature, BLSError> {
+    pub fn aggregate_sigs(&self, sigs: Vec<Signature>) -> Result<Signature, BLSError> {
         if sigs.len() != self.pub_keys.len() {
             return Err(BLSError::LengthMismatch {
                 pub_keys: self.pub_keys.len(),
@@ -38,7 +38,7 @@ impl BDNAggregation {
         // Standard BLS aggregation
         let mut agg_point = G2Projective::identity();
         for sig in sigs {
-            let sig: G2Affine = (*sig).into();
+            let sig: G2Affine = sig.into();
             agg_point += sig;
         }
 

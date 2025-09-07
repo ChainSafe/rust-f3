@@ -150,8 +150,8 @@ impl Verifier for BLSVerifier {
             typed_sigs.push(self.deserialize_signature(&sigs[i])?);
         }
 
-        let bdn = BDNAggregation::new(&typed_pub_keys)?;
-        let agg_sig = bdn.aggregate_sigs(&typed_sigs)?;
+        let bdn = BDNAggregation::new(typed_pub_keys)?;
+        let agg_sig = bdn.aggregate_sigs(typed_sigs)?;
         Ok(agg_sig.as_bytes())
     }
 
@@ -174,7 +174,7 @@ impl Verifier for BLSVerifier {
             typed_pub_keys.push(self.get_or_cache_public_key(&pub_key.0)?);
         }
 
-        let bdn = BDNAggregation::new(&typed_pub_keys)?;
+        let bdn = BDNAggregation::new(typed_pub_keys)?;
         let agg_pub_key = bdn.aggregate_pub_keys()?;
         let agg_pub_key_bytes = PubKey(agg_pub_key.as_bytes().to_vec());
         self.verify_single(&agg_pub_key_bytes, payload, agg_sig)
