@@ -62,6 +62,7 @@ const MAX_POINT_CACHE_SIZE: usize = 10_000;
 impl BLSVerifier {
     pub fn new() -> Self {
         Self {
+            // key size: 48, value size: 196, total estimated: 1.83 MiB
             point_cache: RwLock::new(LruCache::new(MAX_POINT_CACHE_SIZE)),
         }
     }
