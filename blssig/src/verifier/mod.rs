@@ -13,7 +13,7 @@ use crate::bdn::BDNAggregation;
 #[cfg(test)]
 mod tests;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum BLSError {
     #[error("empty public keys provided")]
     EmptyPublicKeys,
@@ -21,12 +21,12 @@ pub enum BLSError {
     EmptySignatures,
     #[error("invalid public key length: expected {BLS_PUBLIC_KEY_LENGTH} bytes, got {0}")]
     InvalidPublicKeyLength(usize),
-    #[error("failed to deserialize public key")]
-    PublicKeyDeserialization,
+    #[error("failed to deserialize public key: {0}")]
+    PublicKeyDeserialization(bls_signatures::Error),
     #[error("invalid signature length: expected {BLS_SIGNATURE_LENGTH} bytes, got {0}")]
     InvalidSignatureLength(usize),
-    #[error("failed to deserialize signature")]
-    SignatureDeserialization,
+    #[error("failed to deserialize signature: {0}")]
+    SignatureDeserialization(bls_signatures::Error),
     #[error("BLS signature verification failed")]
     SignatureVerificationFailed,
     #[error("mismatched number of public keys and signatures: {pub_keys} != {sigs}")]
@@ -112,11 +112,11 @@ impl BLSVerifier {
     }
 
     fn deserialize_public_key(&self, pub_key: &[u8]) -> Result<PublicKey, BLSError> {
-        PublicKey::from_bytes(pub_key).map_err(|_| BLSError::PublicKeyDeserialization)
+        PublicKey::from_bytes(pub_key).map_err(BLSError::PublicKeyDeserialization)
     }
 
     fn deserialize_signature(&self, sig: &[u8]) -> Result<Signature, BLSError> {
-        Signature::from_bytes(sig).map_err(|_| BLSError::SignatureDeserialization)
+        Signature::from_bytes(sig).map_err(BLSError::SignatureDeserialization)
     }
 }
 
