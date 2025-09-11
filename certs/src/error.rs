@@ -101,4 +101,28 @@ pub enum CertsError {
     /// Error when encoding fails.
     #[error("cbor encoding error")]
     EncodingError(#[from] CborError),
+
+    #[error("BLS signature verification failed for instance {instance}: {error}")]
+    SignatureVerificationFailed { instance: u64, error: String },
+
+    #[error(
+        "insufficient power for finality certificate at instance {instance}: {signer_power} < 2/3 * {total_power}"
+    )]
+    InsufficientPower {
+        instance: u64,
+        signer_power: i64,
+        total_power: i64,
+    },
+
+    #[error(
+        "signer index {signer_index} out of bounds for power table of size {power_table_size} at instance {instance}"
+    )]
+    SignerIndexOutOfBounds {
+        instance: u64,
+        signer_index: usize,
+        power_table_size: usize,
+    },
+
+    #[error("signer {signer} has zero effective power at instance {instance}")]
+    ZeroEffectivePower { instance: u64, signer: ActorId },
 }

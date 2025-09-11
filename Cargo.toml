@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["blssig", "certs", "gpbft"]
+members = ["blssig", "certs", "gpbft", "lightclient", "merkle", "rpc"]
 
 [workspace.package]
 authors = ["ChainSafe Systems <forest@chainsafe.io>"]
@@ -12,6 +12,26 @@ rust-version = "1.85.0"
 [workspace.dependencies]
 ahash = "0.8"
 anyhow = "1"
+base32 = "0.5.1"
+base64 = "0.22"
+bls-signatures = { version = "0.15" }
+bls12_381 = "0.8"
+cid = { version = "0.10.1", features = ["std"] }
+fvm_ipld_bitfield = "0.7.1"
 fvm_ipld_encoding = "0.5"
+hashlink = "0.10.0"
+hex = "0.4"
+jsonrpsee = { version = "0.24", features = ["ws-client", "http-client"] }
 keccak-hash = "0.11"
+num-bigint = { version = "0.4.6", features = ["serde"] }
+num-traits = "0.2.19"
+parking_lot = "0.12"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_cbor = "0.11.2"
+serde_json = { version = "1", features = ["raw_value"] }
+sha3 = "0.10.8"
+strum = { version = "0.27.1", features = ["derive"] }
+strum_macros = "0.27.1"
 thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

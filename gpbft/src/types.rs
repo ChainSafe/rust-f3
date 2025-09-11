@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use serde::{Deserialize, Serialize};
+use strum::EnumString;
 
 /// `ActorId` represents the unique identifier for an actor in the Filecoin network.
 pub type ActorId = u64;
@@ -34,4 +35,10 @@ impl PubKey {
 ///
 /// It is used to distinguish between different Filecoin networks,
 /// e.g. mainnet or calibnet.
-pub type NetworkName = String;
+#[derive(strum::Display, EnumString, Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub enum NetworkName {
+    #[strum(serialize = "filecoin")]
+    Mainnet,
+    #[strum(serialize = "calibrationnet")]
+    TestnetCalibration,
+}

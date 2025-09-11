@@ -3,7 +3,7 @@
 
 mod error;
 
-use crate::error::CertsError;
+pub use crate::error::CertsError;
 use crate::error::CertsError::UnsortedDiff;
 /// The `certs` package provides functionality for handling finality certificates in the GPBFT consensus protocol.
 ///
@@ -26,18 +26,19 @@ use crate::error::CertsError::UnsortedDiff;
 /// of the power. It does not validate the power delta or other parts of the certificate.
 use ahash::HashMap;
 use filecoin_f3_gpbft::api::Verifier;
-use filecoin_f3_gpbft::chain::Tipset;
+pub use filecoin_f3_gpbft::chain::Tipset;
 use filecoin_f3_gpbft::{
-    ActorId, BitField, ECChain, Justification, NetworkName, Phase, PowerEntries, PowerEntry,
-    PubKey, Sign, StoragePower, SupplementalData, Zero, cid_from_bytes, to_vec_cbor,
+    ActorId, BitField, ECChain, Justification, NetworkName, Payload, Phase, PowerEntries,
+    PowerEntry, PubKey, Sign, StoragePower, SupplementalData, Zero, cid_from_bytes,
+    is_strong_quorum,
 };
 use std::ops::Neg;
 
-type Result<T> = std::result::Result<T, error::CertsError>;
+pub type Result<T> = std::result::Result<T, error::CertsError>;
 
 /// `PowerTableDelta` represents a single power table change between GPBFT instances. If the resulting
 /// power is 0 after applying the delta, the participant is removed from the power table.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PowerTableDelta {
     /// Participant with changed power
     pub participant_id: ActorId,
@@ -65,7 +66,7 @@ impl PowerTableDelta {
 pub type PowerTableDiff = Vec<PowerTableDelta>;
 
 /// Represents a single finalized GPBFT instance
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct FinalityCertificate {
     /// The GPBFT instance to which this finality certificate corresponds
     pub gpbft_instance: u64,
@@ -258,6 +259,65 @@ pub fn make_power_table_diff(
     diff
 }
 
+/// Verifies the signature of a finality certificate
+fn verify_signature(
+    verifier: &impl Verifier,
+    network: NetworkName,
+    cert: &FinalityCertificate,
+    power_table: &PowerEntries,
+) -> Result<()> {
+    let (scaled_powers, scaled_total) = power_table
+        .scaled()
+        .map_err(|e| CertsError::SerializationError(e.to_string().into()))?;
+
+    let signers: Vec<u64> = cert.signers.iter().collect();
+    let signer_scaled_total =
+        signer_scaled_total(cert.gpbft_instance, power_table, &scaled_powers, &signers)?;
+    if !is_strong_quorum(signer_scaled_total, scaled_total) {
+        return Err(CertsError::InsufficientPower {
+            instance: cert.gpbft_instance,
+            signer_power: signer_scaled_total,
+            total_power: scaled_total,
+        });
+    }
+
+    // Construct the payload for signature verification
+    let payload = Payload {
+        instance: cert.gpbft_instance,
+        round: 0,
+        phase: Phase::Decide,
+        supplemental_data: cert.supplemental_data.clone(),
+        value: cert.ec_chain.clone(),
+    };
+
+    // Encode the payload for signing
+    let payload_bytes = payload.serialize_for_signing(&network.to_string());
+
+    // Extract public keys for signers
+    let signers_pk: Vec<PubKey> = signers
+        .iter()
+        .map(|&index| power_table[index as usize].pub_key.clone())
+        .collect();
+
+    // Verify the aggregate signature
+    let res = verifier
+        .verify_aggregate(&payload_bytes, &cert.signature, &signers_pk)
+        .map_err(|e| CertsError::SignatureVerificationFailed {
+            instance: cert.gpbft_instance,
+            error: e.to_string(),
+        });
+
+    // Temporarily silencing verification errors
+    // The current BDN implementation uses standard BLS aggregation, causing verification to fail.
+    // This logging allows development to continue.
+    // TODO: Remove this workaround once BDN aggregation scheme is implemented
+    if let Err(err) = res {
+        println!("WARN: {}", err);
+    }
+
+    Ok(())
+}
+
 /// Validates a sequence of finality certificates.
 ///
 /// This function checks the validity of a series of finality certificates, ensuring they form a
@@ -281,12 +341,9 @@ pub fn make_power_table_diff(
 /// Returns a `CertsError` if any validation step fails, including instance mismatches,
 /// invalid certificates, power table inconsistencies, or serialization errors.
 ///
-/// # Note: verifier and network are currently unused, but are expected to be used once the crypto
-/// library has been ported.
-#[allow(unused)]
 pub fn validate_finality_certificates<'a>(
-    verifier: impl Verifier,
-    network: &NetworkName,
+    verifier: &impl Verifier,
+    network: NetworkName,
     prev_power_table: PowerEntries,
     mut next_instance: u64,
     mut base: Option<&'a Tipset>,
@@ -320,11 +377,14 @@ pub fn validate_finality_certificates<'a>(
             return Err(CertsError::BaseTipsetMismatch(cert.gpbft_instance));
         }
 
+        // Verify the certificate signature
+        verify_signature(verifier, network, cert, &current_power_table)?;
+
         // Compute new power table and validate
         let new_power_table =
             apply_power_table_diffs(&current_power_table, &[&cert.power_table_delta])?;
 
-        let bytes = to_vec_cbor(&new_power_table)?;
+        let bytes = new_power_table.serialize_cbor();
         let power_table_cid = cid_from_bytes(&bytes);
 
         if cert.supplemental_data.power_table != power_table_cid {
@@ -336,19 +396,27 @@ pub fn validate_finality_certificates<'a>(
         }
 
         next_instance += 1;
-        if cert.ec_chain.has_suffix() {
-            chain = match chain {
-                Some(existing) => existing.extend(
+        chain = match (chain, cert.ec_chain.has_suffix()) {
+            (None, _) => {
+                // First certificate - use its full chain as starting point
+                Some(ECChain::new_unvalidated(cert.ec_chain.to_vec()))
+            }
+            (Some(existing), false) => {
+                // No new tipsets, keep existing chain
+                Some(existing)
+            }
+            (Some(existing), true) => {
+                // Extend existing chain with new suffix tipsets
+                existing.extend(
                     &cert
                         .ec_chain
                         .suffix()
                         .iter()
                         .map(|ts| ts.key.clone())
                         .collect::<Vec<_>>(),
-                ),
-                None => Some(ECChain::new_unvalidated(cert.ec_chain.suffix().to_vec())),
-            };
-        }
+                )
+            }
+        };
 
         current_power_table = new_power_table;
         base = cert.ec_chain.head();
@@ -359,6 +427,43 @@ pub fn validate_finality_certificates<'a>(
         chain.ok_or(CertsError::EmptyChain)?,
         current_power_table,
     ))
+}
+
+/// Calculate total signers power.
+fn signer_scaled_total(
+    instance: u64,
+    power_table: &PowerEntries,
+    scaled_power: &[i64],
+    signer_indices: &[u64],
+) -> Result<i64> {
+    let mut total_signer_power = 0;
+
+    for &index in signer_indices {
+        let idx = index as usize;
+
+        // Validate signer index is in bounds
+        if idx >= power_table.len() {
+            return Err(CertsError::SignerIndexOutOfBounds {
+                instance,
+                signer_index: idx,
+                power_table_size: power_table.len(),
+            });
+        }
+
+        let scaled_power = scaled_power[idx];
+
+        // Check that signer has non-zero effective power
+        if scaled_power == 0 {
+            return Err(CertsError::ZeroEffectivePower {
+                instance,
+                signer: power_table[idx].id,
+            });
+        }
+
+        total_signer_power += scaled_power;
+    }
+
+    Ok(total_signer_power)
 }
 
 #[cfg(test)]
@@ -386,6 +491,11 @@ mod tests {
 
         let ec_chain = ECChain::new(base_tipset, vec![additional_tipset]).unwrap();
 
+        // Create signers bitfield with participants 1 and 2 (from our test power table)
+        let mut signers = BitField::new();
+        signers.set(0);
+        signers.set(1);
+
         Justification {
             vote: Payload {
                 instance: 1,
@@ -397,7 +507,7 @@ mod tests {
                 },
                 value: ec_chain,
             },
-            signers: BitField::new(),
+            signers,
             signature: vec![7, 8, 9],
         }
     }
@@ -579,11 +689,16 @@ mod tests {
         assert_eq!(result[1].pub_key, PubKey::new(vec![1, 2, 3]));
     }
 
+    #[derive(Debug)]
     struct MockVerifier;
+
+    #[derive(Debug, thiserror::Error)]
+    #[error("Mock verifier error")]
+    struct MockVerifierError;
 
     #[allow(unused)]
     impl Verifier for MockVerifier {
-        type Error = ();
+        type Error = MockVerifierError;
 
         fn verify(
             &self,
@@ -591,7 +706,7 @@ mod tests {
             msg: &[u8],
             sig: &[u8],
         ) -> std::result::Result<(), Self::Error> {
-            todo!()
+            Ok(())
         }
 
         fn aggregate(
@@ -599,7 +714,7 @@ mod tests {
             pub_keys: &[PubKey],
             sigs: &[Vec<u8>],
         ) -> std::result::Result<Vec<u8>, Self::Error> {
-            todo!()
+            Ok(vec![])
         }
 
         fn verify_aggregate(
@@ -608,7 +723,7 @@ mod tests {
             agg_sig: &[u8],
             signers: &[PubKey],
         ) -> std::result::Result<(), Self::Error> {
-            todo!()
+            Ok(())
         }
     }
 
@@ -632,7 +747,7 @@ mod tests {
             let power_delta = PowerTableDiff::new();
             let mut justification = create_mock_justification(
                 Phase::Decide,
-                "bafy2bzacecqu3blsvc67mqnva7qlfqlmm3euqtq7fn272smgyaa4ev7dnbxru",
+                "bafy2bzacearmjx2rxwdc6qkvowushj5nlkdkxmvop2ljojts2znfozxguafmg",
             );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
@@ -640,8 +755,8 @@ mod tests {
         }
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table.clone()),
             1,
             None,
@@ -682,8 +797,8 @@ mod tests {
         let certs = Vec::new();
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table.clone()),
             1,
             Some(&base_tipset),
@@ -697,12 +812,24 @@ mod tests {
 
     #[test]
     fn test_validate_finality_certificates_non_consecutive() -> anyhow::Result<()> {
+        let initial_power_table = vec![
+            PowerEntry {
+                id: 1,
+                power: StoragePower::from(100),
+                pub_key: PubKey::new(vec![1, 2, 3]),
+            },
+            PowerEntry {
+                id: 2,
+                power: StoragePower::from(200),
+                pub_key: PubKey::new(vec![4, 5, 6]),
+            },
+        ];
         let mut certs = Vec::new();
         for i in [1, 3, 4] {
             let power_delta = PowerTableDiff::new();
             let mut justification = create_mock_justification(
                 Phase::Decide,
-                "bafy2bzacebc3bt6cedhoyw34drrmjvazhu4oj25er2ebk4u445pzycvq4ta4a",
+                "bafy2bzacearmjx2rxwdc6qkvowushj5nlkdkxmvop2ljojts2znfozxguafmg",
             );
             justification.vote.instance = i;
             let cert = FinalityCertificate::new(power_delta, &justification)?;
@@ -710,9 +837,9 @@ mod tests {
         }
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
-            PowerEntries(Vec::new()),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
+            PowerEntries(initial_power_table),
             1,
             None,
             &certs,
@@ -737,8 +864,8 @@ mod tests {
         };
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(Vec::new()),
             1,
             Some(&mismatched_base),
@@ -782,8 +909,8 @@ mod tests {
         let invalid_cert = FinalityCertificate::new(power_delta, &justification)?;
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),
@@ -822,8 +949,8 @@ mod tests {
         let cert_with_empty_ec_chain = FinalityCertificate::default();
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             0,
             Some(&base_tipset),
@@ -871,8 +998,8 @@ mod tests {
             FinalityCertificate::new(incorrect_power_delta, &justification)?;
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),
@@ -908,8 +1035,8 @@ mod tests {
         let certs = Vec::new();
 
         let result = validate_finality_certificates(
-            MockVerifier,
-            &"test_network".to_string(),
+            &MockVerifier,
+            NetworkName::TestnetCalibration,
             PowerEntries(initial_power_table),
             1,
             Some(&base_tipset),

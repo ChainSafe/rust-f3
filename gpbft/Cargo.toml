@@ -10,20 +10,24 @@ rust-version.workspace = true
 
 [dependencies]
 ahash = { workspace = true }
-base32 = "0.5"
-cid = { version = "0.11", features = ["std"] }
-fvm_ipld_bitfield = "0.7"
+anyhow = { workspace = true }
+base32 = { workspace = true }
+cid = { workspace = true }
+filecoin-f3-merkle = { path = "../merkle" }
+fvm_ipld_bitfield = { workspace = true }
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }
-multihash-codetable = { version = "0.1" }
-num-bigint = { version = "0.4", features = ["serde"] }
-num-traits = "0.2"
-serde = "1"
-strum_macros = "0.27"
+num-bigint = { workspace = true }
+num-traits = { workspace = true }
+serde = { workspace = true }
+serde_cbor = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-filecoin-f3-gpbft = { features = ["test-utils"], path = "../gpbft" }
+base64 = { workspace = true }
+serde_json = { workspace = true }
 
 [target.'cfg(target_family="wasm")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
