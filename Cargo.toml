@@ -21,7 +21,7 @@ fvm_ipld_bitfield = "0.7.1"
 fvm_ipld_encoding = "0.5"
 hashlink = "0.10.0"
 hex = "0.4"
-jsonrpsee = { version = "0.24", features = ["ws-client", "http-client"] }
+jsonrpsee = { version = "0.26", features = ["ws-client", "http-client"] }
 keccak-hash = "0.11"
 num-bigint = { version = "0.4.6", features = ["serde"] }
 num-traits = "0.2.19"
