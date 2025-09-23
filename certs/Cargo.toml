@@ -17,4 +17,4 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-filecoin-f3-gpbft = { path = "../gpbft", features = ["test-utils"] }
+filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0", features = ["test-utils"] }
