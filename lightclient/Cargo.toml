@@ -1,16 +1,17 @@
 [package]
 name = "filecoin-f3-lightclient"
 version = "0.1.0"
+description = "Light client functionality for F3 fast finality protocol, allowing validation of F3 finality certificates without running a full F3 node"
 authors.workspace = true
 repository.workspace = true
 license.workspace = true
 edition.workspace = true
 
 [dependencies]
-filecoin-f3-blssig = { path = "../blssig" }
-filecoin-f3-certs = { path = "../certs" }
-filecoin-f3-gpbft = { path = "../gpbft" }
-filecoin-f3-rpc = { path = "../rpc" }
+filecoin-f3-blssig = { path = "../blssig", version = "0.1.0" }
+filecoin-f3-certs = { path = "../certs", version = "0.1.0" }
+filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0" }
+filecoin-f3-rpc = { path = "../rpc", version = "0.1.0" }
 
 anyhow.workspace = true
 base64 = { workspace = true }
