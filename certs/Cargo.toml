@@ -1,6 +1,7 @@
 [package]
 name = "filecoin-f3-certs"
 version = "0.1.0"
+description = "Data structures and utilities for handling F3 finality certificates"
 
 authors.workspace = true
 repository.workspace = true
@@ -10,10 +11,10 @@ rust-version.workspace = true
 
 [dependencies]
 ahash = { workspace = true }
-filecoin-f3-gpbft = { path = "../gpbft" }
+filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0" }
 keccak-hash = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
-filecoin-f3-gpbft = { path = "../gpbft", features = ["test-utils"] }
+filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0", features = ["test-utils"] }
