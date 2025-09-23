@@ -18,12 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - refactor CertsError ([#24](https://github.com/ChainSafe/rust-f3/pull/24))
-- *(ci)* run build on wasm32 target ([#26](https://github.com/ChainSafe/rust-f3/pull/26))
+- _(ci)_ run build on wasm32 target ([#26](https://github.com/ChainSafe/rust-f3/pull/26))
 
 ### Other
 
 - set depenendency versions in Cargo.toml
 - Add F3 light client functionality ([#27](https://github.com/ChainSafe/rust-f3/pull/27))
 - rust edition 2024 ([#23](https://github.com/ChainSafe/rust-f3/pull/23))
-- *(deps)* update fvm_ipld_bitfield requirement from 0.6.0 to 0.7.1 ([#17](https://github.com/ChainSafe/rust-f3/pull/17))
+- _(deps)_ update fvm_ipld_bitfield requirement from 0.6.0 to 0.7.1 ([#17](https://github.com/ChainSafe/rust-f3/pull/17))
 - basic CI setup ([#5](https://github.com/ChainSafe/rust-f3/pull/5))
