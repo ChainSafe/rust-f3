@@ -2,16 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 //! BDN (Boneh-Drijvers-Neven) signature aggregation scheme, for preventing rogue public-key attacks.
+//! Those attacks could allow an attacker to forge a public-key and then make a verifiable
+//! signature for an aggregation of signatures. It fixes the situation by adding coefficients to the aggregate.
 //!
-//! NOTE: currently uses standard BLS aggregation without coefficient weighting, hence returns incorrect values compared to go-f3.
+//! See the papers:
+//! `https://eprint.iacr.org/2018/483.pdf`
+//! `https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html`
 //!
 use crate::verifier::BLSError;
-use bls_signatures::{PublicKey, Signature};
-use bls12_381::{G1Projective, G2Affine, G2Projective};
+use blake2::Blake2xs;
+use blake2::digest::{ExtendableOutput, Update, XofReader};
+use bls_signatures::{PublicKey, Serialize, Signature};
+use bls12_381::{G1Projective, G2Projective, Scalar};
 
 /// BDN aggregation context for managing signature and public key aggregation
 pub struct BDNAggregation {
-    pub_keys: Vec<PublicKey>,
+    pub(crate) pub_keys: Vec<PublicKey>,
+    pub(crate) coefficients: Vec<Scalar>,
+    pub(crate) terms: Vec<PublicKey>,
 }
 
 impl BDNAggregation {
@@ -20,11 +28,18 @@ impl BDNAggregation {
             return Err(BLSError::EmptyPublicKeys);
         }
 
-        Ok(Self { pub_keys })
+        let coefficients = Self::calc_coefficients(&pub_keys)?;
+        let terms = Self::calc_terms(&pub_keys, &coefficients);
+
+        Ok(Self {
+            pub_keys,
+            coefficients,
+            terms,
+        })
     }
 
-    /// Aggregates signatures using standard BLS aggregation
-    /// TODO: Implement BDN aggregation scheme: https://github.com/ChainSafe/rust-f3/issues/29
+    /// Aggregates signatures using BDN aggregation with coefficients.
+    /// Computes: sum((coef_i + 1) * sig_i)
     pub fn aggregate_sigs(&self, sigs: Vec<Signature>) -> Result<Signature, BLSError> {
         if sigs.len() != self.pub_keys.len() {
             return Err(BLSError::LengthMismatch {
@@ -33,11 +48,14 @@ impl BDNAggregation {
             });
         }
 
-        // Standard BLS aggregation
         let mut agg_point = G2Projective::identity();
-        for sig in sigs {
-            let sig: G2Affine = sig.into();
-            agg_point += sig;
+        for (i, sig) in sigs.iter().enumerate() {
+            let coef = self.coefficients[i];
+            let sig_point: G2Projective = (*sig).into();
+            let sig_c = sig_point * coef;
+            let sig_c = sig_c + sig_point;
+
+            agg_point += sig_c;
         }
 
         // Convert back to Signature
@@ -45,18 +63,68 @@ impl BDNAggregation {
         Ok(agg_sig)
     }
 
-    /// Aggregates public keys using standard BLS aggregation
-    /// TODO: Implement BDN aggregation scheme: https://github.com/ChainSafe/rust-f3/issues/29
-    pub fn aggregate_pub_keys(&self) -> Result<PublicKey, BLSError> {
-        // Standard BLS aggregation
+    /// Aggregates public keys indices using BDN aggregation with coefficients.
+    /// Computes: sum((coef_i + 1) * pub_key_i)
+    pub fn aggregate_pub_keys(&self, indices: &[u64]) -> Result<PublicKey, BLSError> {
+        // Sum of pre-computed terms (which are already (coef_i + 1) * pub_key_i)
         let mut agg_point = G1Projective::identity();
-        for pub_key in &self.pub_keys {
-            let pub_key_point: G1Projective = (*pub_key).into();
-            agg_point += pub_key_point;
+        for &idx in indices {
+            let idx = idx as usize;
+            if idx >= self.terms.len() {
+                return Err(BLSError::SignerIndexOutOfRange(idx));
+            }
+            let term_point: G1Projective = self.terms[idx].into();
+            agg_point += term_point;
         }
 
         // Convert back to PublicKey
         let agg_pub_key: PublicKey = agg_point.into();
         Ok(agg_pub_key)
+    }
+
+    pub fn calc_coefficients(pub_keys: &[PublicKey]) -> Result<Vec<Scalar>, BLSError> {
+        let mut hasher = Blake2xs::new(0xFFFF);
+
+        // Hash all public keys
+        for pub_key in pub_keys {
+            let bytes = pub_key.as_bytes();
+            hasher.update(&bytes);
+        }
+
+        // Read 16 bytes per public key
+        let mut reader = hasher.finalize_xof();
+        let mut output = vec![0u8; pub_keys.len() * 16];
+        reader.read(&mut output);
+
+        // Convert every consecutive 16 bytes chunk to a scalar
+        let mut coefficients = Vec::with_capacity(pub_keys.len());
+        for i in 0..pub_keys.len() {
+            let chunk = &output[i * 16..(i + 1) * 16];
+
+            // Convert 16 bytes to 32 bytes, for scalar (pad with zeros)
+            let mut bytes_32 = [0u8; 32];
+            bytes_32[..16].copy_from_slice(chunk);
+
+            // BLS12-381 scalars expects little-endian byte representation
+            let scalar = Scalar::from_bytes(&bytes_32);
+            if scalar.is_some().into() {
+                coefficients.push(scalar.unwrap());
+            } else {
+                return Err(BLSError::InvalidScalar);
+            }
+        }
+
+        Ok(coefficients)
+    }
+
+    pub fn calc_terms(pub_keys: &[PublicKey], coefficients: &[Scalar]) -> Vec<PublicKey> {
+        let mut terms = vec![];
+        for (i, pub_key) in pub_keys.iter().enumerate() {
+            let pub_key_point: G1Projective = (*pub_key).into();
+            let pub_c = pub_key_point * coefficients[i];
+            let term = pub_c + pub_key_point;
+            terms.push(term.into());
+        }
+        terms
     }
 }

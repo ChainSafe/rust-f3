@@ -17,6 +17,8 @@ mod tests;
 pub enum BLSError {
     #[error("empty public keys provided")]
     EmptyPublicKeys,
+    #[error("empty signers provided")]
+    EmptySigners,
     #[error("empty signatures provided")]
     EmptySignatures,
     #[error("invalid public key length: expected {BLS_PUBLIC_KEY_LENGTH} bytes, got {0}")]
@@ -31,6 +33,10 @@ pub enum BLSError {
     SignatureVerificationFailed,
     #[error("mismatched number of public keys and signatures: {pub_keys} != {sigs}")]
     LengthMismatch { pub_keys: usize, sigs: usize },
+    #[error("invalid scalar value")]
+    InvalidScalar,
+    #[error("signer index {0} is out of range")]
+    SignerIndexOutOfRange(usize),
 }
 
 /// BLS signature verifier using BDN aggregation scheme
@@ -162,14 +168,18 @@ impl Verifier for BLSVerifier {
         &self,
         payload: &[u8],
         agg_sig: &[u8],
-        signers: &[PubKey],
+        power_table: &[PubKey],
+        signer_indices: &[u64],
     ) -> Result<(), Self::Error> {
-        if signers.is_empty() {
+        if power_table.is_empty() {
             return Err(BLSError::EmptyPublicKeys);
+        }
+        if signer_indices.is_empty() {
+            return Err(BLSError::EmptySigners);
         }
 
         let mut typed_pub_keys = vec![];
-        for pub_key in signers {
+        for pub_key in power_table {
             if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
                 return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
             }
@@ -178,7 +188,7 @@ impl Verifier for BLSVerifier {
         }
 
         let bdn = BDNAggregation::new(typed_pub_keys)?;
-        let agg_pub_key = bdn.aggregate_pub_keys()?;
+        let agg_pub_key = bdn.aggregate_pub_keys(signer_indices)?;
         let agg_pub_key_bytes = PubKey(agg_pub_key.as_bytes().to_vec());
         self.verify_single(&agg_pub_key_bytes, payload, agg_sig)
     }

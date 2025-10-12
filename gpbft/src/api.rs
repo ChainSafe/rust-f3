@@ -33,12 +33,16 @@ pub trait Verifier: Send + Sync {
 
     /// Verifies an aggregate signature
     ///
+    /// The aggregation requires all public keys from the power table in order
+    /// to compute coefficients correctly, even when only a subset actually signed.
+    ///
     /// This method must be safe for concurrent use.
     ///
     /// # Arguments
     /// * `payload` - The payload that was signed
     /// * `agg_sig` - The aggregate signature to verify
-    /// * `signers` - The public keys of the signers
+    /// * `power_table` - All public keys from the power table
+    /// * `signer_indices` - Indices of the signers in the power table
     ///
     /// # Returns
     /// A Result indicating success or failure with an error message
@@ -46,6 +50,7 @@ pub trait Verifier: Send + Sync {
         &self,
         payload: &[u8],
         agg_sig: &[u8],
-        signers: &[PubKey],
+        power_table: &[PubKey],
+        signer_indices: &[u64],
     ) -> Result<(), Self::Error>;
 }

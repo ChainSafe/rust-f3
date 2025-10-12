@@ -293,27 +293,19 @@ fn verify_signature(
     // Encode the payload for signing
     let payload_bytes = payload.serialize_for_signing(&network.to_string());
 
-    // Extract public keys for signers
-    let signers_pk: Vec<PubKey> = signers
+    // Extract all public keys from power table
+    let pub_keys: Vec<PubKey> = power_table
         .iter()
-        .map(|&index| power_table[index as usize].pub_key.clone())
+        .map(|entry| entry.pub_key.clone())
         .collect();
 
     // Verify the aggregate signature
-    let res = verifier
-        .verify_aggregate(&payload_bytes, &cert.signature, &signers_pk)
+    verifier
+        .verify_aggregate(&payload_bytes, &cert.signature, &pub_keys, &signers)
         .map_err(|e| CertsError::SignatureVerificationFailed {
             instance: cert.gpbft_instance,
             error: e.to_string(),
-        });
-
-    // Temporarily silencing verification errors
-    // The current BDN implementation uses standard BLS aggregation, causing verification to fail.
-    // This logging allows development to continue.
-    // TODO: Remove this workaround once BDN aggregation scheme is implemented
-    if let Err(err) = res {
-        println!("WARN: {}", err);
-    }
+        })?;
 
     Ok(())
 }
@@ -721,7 +713,8 @@ mod tests {
             &self,
             payload: &[u8],
             agg_sig: &[u8],
-            signers: &[PubKey],
+            power_table: &[PubKey],
+            signer_indices: &[u64],
         ) -> std::result::Result<(), Self::Error> {
             Ok(())
         }
