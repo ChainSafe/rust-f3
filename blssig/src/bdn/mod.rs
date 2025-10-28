@@ -18,7 +18,6 @@ use rayon::prelude::*;
 
 /// BDN aggregation context for managing signature and public key aggregation
 pub struct BDNAggregation {
-    pub(crate) pub_keys: Vec<PublicKey>,
     pub(crate) coefficients: Vec<Scalar>,
     pub(crate) terms: Vec<PublicKey>,
 }
@@ -33,25 +32,33 @@ impl BDNAggregation {
         let terms = Self::calc_terms(&pub_keys, &coefficients);
 
         Ok(Self {
-            pub_keys,
             coefficients,
             terms,
         })
     }
 
     /// Aggregates signatures using BDN aggregation with coefficients.
-    /// Computes: sum((coef_i + 1) * sig_i)
-    pub fn aggregate_sigs(&self, sigs: Vec<Signature>) -> Result<Signature, BLSError> {
-        if sigs.len() != self.pub_keys.len() {
+    /// Computes: sum((coef_i + 1) * sig_i) for signatures at the given indices
+    pub fn aggregate_sigs(
+        &self,
+        indices: &[u64],
+        sigs: &[Signature],
+    ) -> Result<Signature, BLSError> {
+        if sigs.len() != indices.len() {
             return Err(BLSError::LengthMismatch {
-                pub_keys: self.pub_keys.len(),
+                pub_keys: indices.len(),
                 sigs: sigs.len(),
             });
         }
 
         let mut agg_point = G2Projective::identity();
-        for (i, sig) in sigs.iter().enumerate() {
-            let coef = self.coefficients[i];
+        for (sig, &idx) in sigs.iter().zip(indices.iter()) {
+            let idx = idx as usize;
+            if idx >= self.coefficients.len() {
+                return Err(BLSError::SignerIndexOutOfRange(idx));
+            }
+
+            let coef = self.coefficients[idx];
             let sig_point: G2Projective = (*sig).into();
             let sig_c = sig_point * coef;
             let sig_c = sig_c + sig_point;
