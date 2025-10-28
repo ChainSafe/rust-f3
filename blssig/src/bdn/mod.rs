@@ -14,6 +14,7 @@ use blake2::Blake2xs;
 use blake2::digest::{ExtendableOutput, Update, XofReader};
 use bls_signatures::{PublicKey, Serialize, Signature};
 use bls12_381::{G1Projective, G2Projective, Scalar};
+use rayon::prelude::*;
 
 /// BDN aggregation context for managing signature and public key aggregation
 pub struct BDNAggregation {
@@ -118,13 +119,15 @@ impl BDNAggregation {
     }
 
     pub fn calc_terms(pub_keys: &[PublicKey], coefficients: &[Scalar]) -> Vec<PublicKey> {
-        let mut terms = vec![];
-        for (i, pub_key) in pub_keys.iter().enumerate() {
-            let pub_key_point: G1Projective = (*pub_key).into();
-            let pub_c = pub_key_point * coefficients[i];
-            let term = pub_c + pub_key_point;
-            terms.push(term.into());
-        }
-        terms
+        pub_keys
+            .par_iter()
+            .enumerate()
+            .map(|(i, pub_key)| {
+                let pub_key_point: G1Projective = (*pub_key).into();
+                let pub_c = pub_key_point * coefficients[i];
+                let term = pub_c + pub_key_point;
+                term.into()
+            })
+            .collect()
     }
 }

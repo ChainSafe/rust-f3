@@ -16,6 +16,7 @@ bls12_381.workspace = true
 filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0" }
 hashlink.workspace = true
 parking_lot.workspace = true
+rayon.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

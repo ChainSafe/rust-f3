@@ -1,6 +1,7 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+use std::sync::Arc;
 use bls_signatures::{PublicKey, Serialize, Signature, verify_messages};
 use filecoin_f3_gpbft::PubKey;
 use filecoin_f3_gpbft::api::Verifier;
@@ -43,11 +44,14 @@ pub enum BLSError {
 ///
 /// This verifier implements the same scheme used by `go-f3/blssig`, with:
 /// - BLS12_381 curve
-/// - G1 for public keys, G2 for signatures  
+/// - G1 for public keys, G2 for signatures
 /// - BDN aggregation for rogue-key attack prevention
 pub struct BLSVerifier {
     /// Cache for deserialized public key points to avoid expensive repeated operations
     point_cache: RwLock<LruCache<Vec<u8>, PublicKey>>,
+    /// Cache for current power table's BDN aggregation
+    /// Only caches the current since power tables don't tend to repeat after rotation
+    bdn_cache: RwLock<Option<(Vec<PubKey>, Arc<BDNAggregation>)>>,
 }
 
 impl Default for BLSVerifier {
@@ -70,6 +74,7 @@ impl BLSVerifier {
         Self {
             // key size: 48, value size: 196, total estimated: 1.83 MiB
             point_cache: RwLock::new(LruCache::new(MAX_POINT_CACHE_SIZE)),
+            bdn_cache: RwLock::new(None),
         }
     }
 
@@ -119,6 +124,34 @@ impl BLSVerifier {
 
     fn deserialize_signature(&self, sig: &[u8]) -> Result<Signature, BLSError> {
         Signature::from_bytes(sig).map_err(BLSError::SignatureDeserialization)
+    }
+
+    /// Gets a cached BDN aggregation or creates and caches it
+    fn get_or_cache_bdn(&self, power_table: &[PubKey]) -> Result<Arc<BDNAggregation>, BLSError> {
+        // Check cache first
+        if let Some((cached_power_table, cached_bdn)) = self.bdn_cache.read().as_ref() {
+            if cached_power_table == power_table {
+                return Ok(cached_bdn.clone());
+            }
+        }
+
+        // Deserialize and create new BDN aggregation
+        let mut typed_pub_keys = vec![];
+        for pub_key in power_table {
+            if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
+                return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
+            }
+            typed_pub_keys.push(self.get_or_cache_public_key(&pub_key.0)?);
+        }
+
+        let bdn = Arc::new(BDNAggregation::new(typed_pub_keys)?);
+
+        // Cache it
+        self.bdn_cache
+            .write()
+            .replace((power_table.to_vec(), bdn.clone()));
+
+        Ok(bdn)
     }
 }
 
@@ -178,16 +211,7 @@ impl Verifier for BLSVerifier {
             return Err(BLSError::EmptySigners);
         }
 
-        let mut typed_pub_keys = vec![];
-        for pub_key in power_table {
-            if pub_key.0.len() != BLS_PUBLIC_KEY_LENGTH {
-                return Err(BLSError::InvalidPublicKeyLength(pub_key.0.len()));
-            }
-
-            typed_pub_keys.push(self.get_or_cache_public_key(&pub_key.0)?);
-        }
-
-        let bdn = BDNAggregation::new(typed_pub_keys)?;
+        let bdn = self.get_or_cache_bdn(power_table)?;
         let agg_pub_key = bdn.aggregate_pub_keys(signer_indices)?;
         let agg_pub_key_bytes = PubKey(agg_pub_key.as_bytes().to_vec());
         self.verify_single(&agg_pub_key_bytes, payload, agg_sig)
