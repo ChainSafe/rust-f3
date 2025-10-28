@@ -1,12 +1,12 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-use std::sync::Arc;
 use bls_signatures::{PublicKey, Serialize, Signature, verify_messages};
 use filecoin_f3_gpbft::PubKey;
 use filecoin_f3_gpbft::api::Verifier;
 use hashlink::LruCache;
 use parking_lot::RwLock;
+use std::sync::Arc;
 use thiserror::Error;
 
 use crate::bdn::BDNAggregation;
