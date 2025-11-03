@@ -14,7 +14,7 @@ ahash = "0.8"
 anyhow = "1"
 base32 = "0.5.1"
 base64 = "0.22"
-blake2 = { git = "https://github.com/huitseeker/hashes.git", branch = "blake2x-pr", features = ["blake2x"] }
+blake2 = { git = "https://github.com/huitseeker/hashes.git", rev = "4d3debf264a45da9e33d52645eb6ee9963336f66", features = ["blake2x"] } # PR: https://github.com/RustCrypto/hashes/pull/704
 bls-signatures = { version = "0.15" }
 bls12_381 = "0.8"
 cid = { version = "0.10.1", features = ["std"] }
