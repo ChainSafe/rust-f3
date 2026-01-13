@@ -73,7 +73,7 @@ jobs:
         run: |
           gem install toml-rb --no-document
           ruby scripts/linters/find_unused_deps.rb
-  codedov:
+  codecov:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v6
