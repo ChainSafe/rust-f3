@@ -48,11 +48,11 @@ jobs:
           timeout_minutes: 5
           max_attempts: 3
           command: |
-            sudo apt-get install -y libclang-dev # required dep for cargo-spellcheck
+            sudo apt-get install -y build-essential # required dep for cargo-spellcheck
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
         with:
-          version: "14"
+          version: "18"
       - name: Install Lint tools
         run: make install-lint-tools-ci
         env:
