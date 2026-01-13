@@ -50,9 +50,20 @@ install-lint-tools:
 	cargo install --locked cargo-deny
 	cargo install --locked cargo-spellcheck
 
-install-lint-tools-ci:
-	wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz
-	tar xzf cargo-binstall-x86_64-unknown-linux-musl.tgz
+# Denotes the architecture of the machine. This is required for direct binary downloads.
+# Note that some repositories might use different names for the same architecture.
+CPU_ARCH := $(shell \
+  ARCH=$$(uname -m); \
+  if [ "$$ARCH" = "arm64" ]; then \
+    ARCH="aarch64"; \
+  fi; \
+  echo "$$ARCH" \
+)
+
+install-cargo-binstall:
+	wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-$(CPU_ARCH)-unknown-linux-musl.tgz
+	tar xzf cargo-binstall-$(CPU_ARCH)-unknown-linux-musl.tgz
 	cp cargo-binstall ~/.cargo/bin/cargo-binstall
 
+install-lint-tools-ci: install-cargo-binstall
 	cargo binstall --no-confirm taplo-cli cargo-spellcheck cargo-deny
