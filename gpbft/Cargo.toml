@@ -32,7 +32,8 @@ base64 = { workspace = true }
 serde_json = { workspace = true }
 
 [target.'cfg(target_family="wasm")'.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom_0_2 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_0_3 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 
 [features]
 test-utils = []
