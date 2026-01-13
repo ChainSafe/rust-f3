@@ -1,6 +1,6 @@
 [package]
 name = "filecoin-f3-gpbft"
-version = "0.1.0"
+version = "0.1.1"
 description = "Implementation of the GPBFT consensus algorithm used in the F3 fast finality protocol"
 
 authors.workspace = true
@@ -14,7 +14,7 @@ ahash = { workspace = true }
 anyhow = { workspace = true }
 base32 = { workspace = true }
 cid = { workspace = true }
-filecoin-f3-merkle = { path = "../merkle", version = "0.1.0" }
+filecoin-f3-merkle = { path = "../merkle", version = "0.1.1" }
 fvm_ipld_bitfield = { workspace = true }
 fvm_ipld_encoding = { workspace = true }
 keccak-hash = { workspace = true }

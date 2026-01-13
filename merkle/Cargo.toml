@@ -1,6 +1,6 @@
 [package]
 name = "filecoin-f3-merkle"
-version = "0.1.0"
+version = "0.1.1"
 description = "Merkle tree implementation matching go-f3's merkle package"
 
 authors.workspace = true
