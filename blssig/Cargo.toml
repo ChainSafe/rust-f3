@@ -1,6 +1,6 @@
 [package]
 name = "filecoin-f3-blssig"
-version = "0.1.0"
+version = "0.1.1"
 description = "BLS signature handling for the F3 fast finality protocol"
 
 authors.workspace = true
@@ -12,7 +12,7 @@ rust-version.workspace = true
 [dependencies]
 bls-signatures.workspace = true
 bls12_381.workspace = true
-filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.0" }
+filecoin-f3-gpbft = { path = "../gpbft", version = "0.1.1" }
 hashlink.workspace = true
 parking_lot.workspace = true
 thiserror.workspace = true
