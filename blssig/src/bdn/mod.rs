@@ -117,12 +117,10 @@ impl BDNAggregation {
             bytes_32[..16].copy_from_slice(chunk);
 
             // BLS12-381 scalars expects little-endian byte representation
-            let scalar = Scalar::from_bytes(&bytes_32);
-            if scalar.is_some().into() {
-                coefficients.push(scalar.unwrap());
-            } else {
-                return Err(BLSError::InvalidScalar);
-            }
+            let scalar = Scalar::from_bytes(&bytes_32)
+                .into_option()
+                .ok_or(BLSError::InvalidScalar)?;
+            coefficients.push(scalar);
         }
 
         Ok(coefficients)
