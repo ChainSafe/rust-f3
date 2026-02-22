@@ -17,24 +17,8 @@
 use anyhow::Result;
 use filecoin_f3_gpbft::PowerEntries;
 use filecoin_f3_gpbft::powertable::{is_strong_quorum, signer_scaled_total};
-use filecoin_f3_lightclient::LightClient;
+use filecoin_f3_lightclient::{LightClient, NETWORK_CONFIGS, NetworkConfig};
 use std::env;
-
-struct NetworkConfig {
-    network_name: &'static str,
-    endpoint: &'static str,
-}
-
-const NETWORK_CONFIGS: [NetworkConfig; 2] = [
-    NetworkConfig {
-        network_name: "calibrationnet",
-        endpoint: "https://filecoin-calibration.ipc.space/rpc/v1",
-    },
-    NetworkConfig {
-        network_name: "filecoin",
-        endpoint: "https://filecoin.ipc.space/rpc/v1",
-    },
-];
 
 #[tokio::main]
 async fn main() -> Result<()> {

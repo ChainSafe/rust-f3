@@ -5,7 +5,7 @@ use filecoin_f3_gpbft::ActorId;
 use num_bigint::BigInt;
 use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FinalityCertificate {
     #[serde(rename = "GPBFTInstance")]
     pub instance: u64,
@@ -26,7 +26,7 @@ pub struct FinalityCertificate {
     pub power_table_delta: Vec<PowerTableDelta>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ECTipSet {
     #[serde(rename = "Key")]
     pub key: Vec<CidRef>,
@@ -41,7 +41,7 @@ pub struct ECTipSet {
     pub power_table: CidRef,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SupplementalData {
     #[serde(rename = "Commitments")]
     pub commitments: String,
@@ -50,7 +50,7 @@ pub struct SupplementalData {
     pub power_table: CidRef,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PowerTableDelta {
     #[serde(rename = "ParticipantID")]
     pub participant_id: ActorId,
