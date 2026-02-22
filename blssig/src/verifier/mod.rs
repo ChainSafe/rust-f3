@@ -51,7 +51,7 @@ pub struct BLSVerifier {
     point_cache: RwLock<LruCache<Vec<u8>, PublicKey>>,
     /// Cache for current power table's BDN aggregation
     /// Only caches the current since power tables don't tend to repeat after rotation
-    bdn_cache: RwLock<Option<(Vec<PubKey>, Arc<BDNAggregation>)>>,
+    current_bdn_cache: RwLock<Option<(Vec<PubKey>, Arc<BDNAggregation>)>>,
 }
 
 impl Default for BLSVerifier {
@@ -74,7 +74,7 @@ impl BLSVerifier {
         Self {
             // key size: 48, value size: 196, total estimated: 1.83 MiB
             point_cache: RwLock::new(LruCache::new(MAX_POINT_CACHE_SIZE)),
-            bdn_cache: RwLock::new(None),
+            current_bdn_cache: RwLock::new(None),
         }
     }
 
@@ -129,7 +129,7 @@ impl BLSVerifier {
     /// Gets a cached BDN aggregation or creates and caches it
     fn get_or_cache_bdn(&self, power_table: &[PubKey]) -> Result<Arc<BDNAggregation>, BLSError> {
         // Check cache first
-        if let Some((cached_power_table, cached_bdn)) = self.bdn_cache.read().as_ref() {
+        if let Some((cached_power_table, cached_bdn)) = self.current_bdn_cache.read().as_ref() {
             if cached_power_table == power_table {
                 return Ok(cached_bdn.clone());
             }
@@ -147,7 +147,7 @@ impl BLSVerifier {
         let bdn = Arc::new(BDNAggregation::new(typed_pub_keys)?);
 
         // Cache it
-        self.bdn_cache
+        self.current_bdn_cache
             .write()
             .replace((power_table.to_vec(), bdn.clone()));
 
