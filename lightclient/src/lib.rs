@@ -1,7 +1,7 @@
 // Copyright 2019-2024 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
-mod rpc_to_internal;
+pub mod rpc_to_internal;
 
 extern crate core;
 
@@ -11,6 +11,22 @@ use filecoin_f3_certs as certs;
 use filecoin_f3_certs::validate_finality_certificates;
 use filecoin_f3_gpbft::{ECChain, NetworkName, PowerEntries};
 use filecoin_f3_rpc::RPCClient;
+
+pub struct NetworkConfig {
+    pub network_name: &'static str,
+    pub endpoint: &'static str,
+}
+
+pub const NETWORK_CONFIGS: [NetworkConfig; 2] = [
+    NetworkConfig {
+        network_name: "calibrationnet",
+        endpoint: "https://rpc.ankr.com/filecoin_testnet",
+    },
+    NetworkConfig {
+        network_name: "filecoin",
+        endpoint: "https://api.node.glif.io/rpc/v1",
+    },
+];
 
 pub struct LightClient {
     rpc: RPCClient,

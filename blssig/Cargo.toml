@@ -20,4 +20,5 @@ rayon.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+hex.workspace = true
 rand.workspace = true

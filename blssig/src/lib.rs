@@ -8,7 +8,10 @@
 //! The BDN (Boneh-Drijvers-Neven) scheme is used for signature and public key aggregation
 //! to prevent rogue public-key attacks.
 
+pub use verifier::{BLSError, BLSVerifier};
+
 mod bdn;
 mod verifier;
 
-pub use verifier::{BLSError, BLSVerifier};
+#[cfg(test)]
+mod tests;
