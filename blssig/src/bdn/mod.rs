@@ -81,7 +81,7 @@ impl BDNAggregation {
             }
         }
 
-        // Sum of pre-computed terms (which are already (coef_i + 1) * pub_key_i)
+        // Sum of pre-computed terms (which are already `(coef_i + 1) * pub_key_i`)
         let mut agg_point = G1Projective::identity();
         for &idx in indices {
             let term_point: G1Projective = self.terms[idx as usize].into();
