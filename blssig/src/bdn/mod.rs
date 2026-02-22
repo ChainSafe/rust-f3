@@ -6,8 +6,8 @@
 //! signature for an aggregation of signatures. It fixes the situation by adding coefficients to the aggregate.
 //!
 //! See the papers:
-//! `https://eprint.iacr.org/2018/483.pdf`
-//! `https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html`
+//! - <https://eprint.iacr.org/2018/483.pdf>
+//! - <https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html>
 //!
 use crate::verifier::BLSError;
 use blake2::Blake2xs;
