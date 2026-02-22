@@ -38,7 +38,7 @@ impl BDNAggregation {
     }
 
     /// Aggregates signatures using BDN aggregation with coefficients.
-    /// Computes: sum((coef_i + 1) * sig_i) for signatures at the given indices
+    /// Computes: `sum((coef_i + 1) * sig_i)` for signatures at the given indices
     pub fn aggregate_sigs(
         &self,
         indices: &[u64],
