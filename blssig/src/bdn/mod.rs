@@ -72,7 +72,7 @@ impl BDNAggregation {
     }
 
     /// Aggregates public keys indices using BDN aggregation with coefficients.
-    /// Computes: sum((coef_i + 1) * pub_key_i)
+    /// Computes: `sum((coef_i + 1) * pub_key_i)`
     pub fn aggregate_pub_keys(&self, indices: &[u64]) -> Result<PublicKey, BLSError> {
         // Sum of pre-computed terms (which are already (coef_i + 1) * pub_key_i)
         let mut agg_point = G1Projective::identity();
