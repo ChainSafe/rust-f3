@@ -51,14 +51,15 @@ impl BDNAggregation {
             });
         }
 
+        for &idx in indices {
+            if idx as usize >= self.coefficients.len() {
+                return Err(BLSError::SignerIndexOutOfRange(idx as usize));
+            }
+        }
+
         let mut agg_point = G2Projective::identity();
         for (sig, &idx) in sigs.iter().zip(indices.iter()) {
-            let idx = idx as usize;
-            if idx >= self.coefficients.len() {
-                return Err(BLSError::SignerIndexOutOfRange(idx));
-            }
-
-            let coef = self.coefficients[idx];
+            let coef = self.coefficients[idx as usize];
             let sig_point: G2Projective = (*sig).into();
             let sig_c = sig_point * coef;
             let sig_c = sig_c + sig_point;
@@ -74,14 +75,16 @@ impl BDNAggregation {
     /// Aggregates public keys indices using BDN aggregation with coefficients.
     /// Computes: `sum((coef_i + 1) * pub_key_i)`
     pub fn aggregate_pub_keys(&self, indices: &[u64]) -> Result<PublicKey, BLSError> {
+        for &idx in indices {
+            if idx as usize >= self.terms.len() {
+                return Err(BLSError::SignerIndexOutOfRange(idx as usize));
+            }
+        }
+
         // Sum of pre-computed terms (which are already (coef_i + 1) * pub_key_i)
         let mut agg_point = G1Projective::identity();
         for &idx in indices {
-            let idx = idx as usize;
-            if idx >= self.terms.len() {
-                return Err(BLSError::SignerIndexOutOfRange(idx));
-            }
-            let term_point: G1Projective = self.terms[idx].into();
+            let term_point: G1Projective = self.terms[idx as usize].into();
             agg_point += term_point;
         }
 
